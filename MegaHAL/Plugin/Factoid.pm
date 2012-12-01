@@ -2,6 +2,6 @@ package MegaHAL::Plugin::Factoid;
 use DBI;
 
 sub new {
-	my ($class,$serv)=@_;
-	
+    my ($class, $serv) = @_;
+
 }
