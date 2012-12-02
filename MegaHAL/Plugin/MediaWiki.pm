@@ -10,7 +10,7 @@ sub new {
         'sock'  => {}
     };
     $self->{'serv'} = $serv;
-    weaken $self->{'serv'};
+    weaken($self->{'serv'});
     return bless $self, $class;
 }
 
