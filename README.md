@@ -6,6 +6,7 @@ An IRC bot initially designed to proxy the eponymous conversational simulator.
 Prerequisites
 -------------
 - Perl v5.16 recommended, v5.10 required.
+
 Perl modules:
 - AnyEvent
 - AnyEvent::IRC

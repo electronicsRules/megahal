@@ -257,7 +257,8 @@ sub shorten {
     $str =~ s/[\r\n\t]+/;/g;
     $str =~ s/ *([.,!?;()\[\]{}~=_-]+) */$1/g;
     $str =~ s/([ ;-]){2,}/$1/g;
-    $str =~ s/\.\.+/\N{U+2026}/g;                                                                                       #horizontal ellipsis
+    #horizontal ellipsis
+    $str =~ s/\.\.+/\N{U+2026}/g;
     $str =~ s/([?!.:]);/$1/g;
     $str =~ s#(?:http://)?(?:www\.)?fimfiction.net/story/(\d+)(?:\/[a-zA-Z0-9%-]*)?#http://fimfiction.net/story/$1#g;
     return $str;
