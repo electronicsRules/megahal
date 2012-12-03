@@ -20,7 +20,7 @@ sub new {
         'session'  => {},
         'lastmsg'  => 0,
         'msgcache' => [],
-        #'scap' => {}
+      ##'scap' => {}
     };
     bless $self, $class;
     $self->{'plugins'} = MegaHAL::Plugins->new($self);
@@ -66,11 +66,11 @@ sub msg {
         $self->{'lastmsg'} = time;
         $self->{'lastmsg'} += 0.5 * (2**(length($msg) / 512)) if length($msg) > 380;
         $self->send_long_message('utf8', 0, 'PRIVMSG' => $target, $msg);
-        #print "Instant msg!\n";
-        #print ($self->{'lastmsg'}-time)."\n";
+      ##print "Instant msg!\n";
+      ##print ($self->{'lastmsg'}-time)."\n";
     } else {
         push @{ $self->{'msgcache'} }, [ $target, $msg ];
-        #print "Delayed msg!\n";
+      ##print "Delayed msg!\n";
     }
 }
 
@@ -229,38 +229,38 @@ sub connect {
                         $self->send_long_message('utf8', 0, 'PRIVMSG' => $tgt, $msg);
                         $self->{'lastmsg'} = time;
                         $self->{'lastmsg'} += 0.5 * (2**(length($msg) / 512)) if length($msg) > 380;
-                        #print ($self->{'lastmsg'}-time)."\n";
+                      ##print ($self->{'lastmsg'}-time)."\n";
                     }
                 }
             );
             if ($self->{'auth'} && $self->{'authpw'}) {
                 given ($self->{'auth'}) {
                     when ('nickserv') {
-                        my $grd;
-                        my $tmr;
-                        $grd = $self->{'con'}->reg_cb(
+                        $self->{'auth_ok'} = 0;
+                        my $grd = $self->{'con'}->reg_cb(
                             privatemsg => sub {
                                 my ($this, $nick, $ircmsg) = @_;
                                 my $command = $ircmsg->{'command'};
                                 my $message = $ircmsg->{'params'}->[1];
                                 if ($nick eq $self->nick() && $message =~ /^You are now identified for /) {
+                                    $self->{'auth_ok'} = 1;
                                     print "[$$self{name}] NickServ auth OK\n";
                                     $self->call_hook('auth_ok');
                                     $this->unreg_me;
-                                    $this->unreg_cb($tmr);
                                 }
                             }
                         );
-                        $tmr = AnyEvent->timer(
+                        my $tmr = AnyEvent->timer(
                             after => 5,
                             cb    => sub {
-                                warn "[$$self{name}] NickServ auth failed!\n";
-                                $self->call_hook('auth_fail');
-                                $self->{'con'}->unreg_cb($grd);
+                                if (!$self->{'auth_ok'}) {
+                                    $self->{'auth_ok'} = -1;
+                                    warn "[$$self{name}] NickServ auth failed!\n";
+                                    $self->call_hook('auth_fail');
+                                }
                             }
                         );
                         push @{ $self->{'timer'} }, $tmr;
-                        weaken($tmr);
                         $self->send_msg('NS' => 'IDENTIFY', $self->{'authpw'});
                     }
                     default {
@@ -439,7 +439,7 @@ sub common_chans {
     return scalar(
         map {
             grep { $_ eq $nick }
-            keys %$_
+              keys %$_
         } values %chans
     );
 }
