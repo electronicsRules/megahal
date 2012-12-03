@@ -25,14 +25,14 @@ sub new {
         'iConsoleCommand' => sub {
             my ($this, $i, $cmd, @args) = @_;
             my $nick    = $i->source();
-            my $ownnick = $this->nick();
+            my $ownnick = $serv->nick();
             my $tgt     = shift @args;
             my $msg     = join ' ', @args;
             if ($cmd eq 'msg' || $cmd eq 'say') {
                 $serv->msg($_, "\cC3$nick\cO -> $tgt $msg") foreach @{ $self->{'chans'} };
                 $serv->msg($tgt, $msg);
             } elsif ($cmd eq 'act') {
-                $serv->msg($_,   "\cC3$nick\cO -> $tgt * $ownnick $msg");
+                $serv->msg($_,   "\cC3$nick\cO -> $tgt * $ownnick $msg") foreach @{ $self->{'chans'} };
                 $serv->msg($tgt, "\cAACTION $msg\cA");
             } elsif ($cmd eq 'help') {
                 my $sn = $serv->name();
