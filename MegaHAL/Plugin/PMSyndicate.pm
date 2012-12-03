@@ -32,7 +32,7 @@ sub new {
                 $serv->msg($_, "\cC3$nick\cO -> $tgt $msg") foreach @{ $self->{'chans'} };
                 $serv->msg($tgt, $msg);
             } elsif ($cmd eq 'act') {
-                $serv->msg($_,   "\cC3$nick\cO -> $tgt * $ownnick $msg") foreach @{ $self->{'chans'} };
+                $serv->msg($_, "\cC3$nick\cO -> $tgt * $ownnick $msg") foreach @{ $self->{'chans'} };
                 $serv->msg($tgt, "\cAACTION $msg\cA");
             } elsif ($cmd eq 'help') {
                 my $sn = $serv->name();
