@@ -24,21 +24,26 @@ sub new {
     $serv->reg_cb(
         'iConsoleCommand' => sub {
             my ($this, $i, $cmd, @args) = @_;
-            my $nick = $i->source();
-            my $tgt  = shift @args;
-            my $msg  = join ' ', @args;
-            if ($cmd eq 'msg') {
+            my $nick    = $i->source();
+            my $ownnick = $this->nick();
+            my $tgt     = shift @args;
+            my $msg     = join ' ', @args;
+            if ($cmd eq 'msg' || $cmd eq 'say') {
                 $serv->msg($_, "\cC3$nick\cO -> $tgt $msg") foreach @{ $self->{'chans'} };
                 $serv->msg($tgt, $msg);
+            } elsif ($cmd eq 'act') {
+                $serv->msg($_,   "\cC3$nick\cO -> $tgt * $ownnick $msg");
+                $serv->msg($tgt, "\cAACTION $msg\cA");
             } elsif ($cmd eq 'help') {
                 my $sn = $serv->name();
                 $i->write(
                     "MegaHAL help (temporary command from PMSyndicate.pm):
 Syndicated commands:
 c $sn msg #channel message
+c $sn act #channel message
 Direct commands:
-raw $sn privmsg #channel message
 raw $sn notice #channel message
+raw $sn mode #channel +modes arguments here as normal
 Quoting rules:
 To send apostrophes, wrap them in \"double quotes\"
 To send double quotes, wrap them in \'single quotes\'

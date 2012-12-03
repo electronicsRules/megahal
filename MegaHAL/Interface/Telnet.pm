@@ -17,8 +17,8 @@ sub _write {
     chomp $str;
     $self->{'hdl'}->push_write($str . color('reset') . "\n");
 }
-sub type   { "telnet" }
-sub atype  { 'user' }
+sub type   {"telnet"}
+sub atype  {'user'}
 sub source { $_[0]->{'user'} . '@telnet' || 'UNKNOWN' }
 
 sub _auth {

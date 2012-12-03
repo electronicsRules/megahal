@@ -31,7 +31,7 @@ sub _auth {
         }
     );
 }
-sub type   { "DCC" }
-sub atype  { 'irc' }
+sub type   {"DCC"}
+sub atype  {'irc'}
 sub source { $_[0]->{'nick'} . '#' . $_[0]->{'id'} . '@' . $_[0]->{'server'} }
 1;

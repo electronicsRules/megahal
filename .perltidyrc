@@ -1,8 +1,12 @@
+-pbp
+-nst
 -se
 -l 99999999999
 -ole=unix
 -ce
--ci=0
+-ci=2
+-cti=0
+-nicp
 -bar
 -nsbl
 -sot
@@ -16,3 +20,5 @@
 -vtc=0
 -nbbc
 -nbbb
+-osbc
+-nola

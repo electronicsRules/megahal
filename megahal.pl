@@ -79,7 +79,7 @@ sub load {
     if (!$extip) {
         http_get 'http://automation.whatismyip.com/n09230945.asp', sub {
             $extip = $_[0];
-        }
+          }
     }
 }
 
@@ -119,21 +119,21 @@ our $default = \('_default');
                 }
                 $cv->end();
             }
-        }
+          }
     ],
     qr/^(?:re)?(?:(?:load)|(?:hash))$/ => [
         '', '',
         sub {
             load();
             $_[0]->write("Loaded!\n");
-        }
+          }
     ],
     'save' => [
         '', '',
         sub {
             save();
             $_[0]->write("Saved!\n");
-        }
+          }
     ],
     qr/^con(?:nect)?$/ => [
         '_server',
@@ -151,7 +151,7 @@ our $default = \('_default');
                     $i->write("\cC4Error connecting to $s: " . $r->[0]);
                 }
             }
-        }
+          }
     ],
     qr/^dis(?:con(?:nect)?)?$/ => [
         '_server',
@@ -163,7 +163,7 @@ our $default = \('_default');
             } else {
                 $i->write("\cC4$s is not connected!\n");
             }
-        }
+          }
     ],
     qr/^mod(?:ule)?$/ => [
         'server', '',
@@ -184,7 +184,7 @@ our $default = \('_default');
                     } else {
                         $i->write("[$s] \cC4Error while loading $p: " . ($r->[0]));
                     }
-                }
+                  }
             ],
             qr/^u(?:nload)?$/ => [
                 '_plugin',
@@ -202,21 +202,21 @@ our $default = \('_default');
                     } else {
                         $i->write("[$s] \cC4Error while unloading $p: " . ($r->[0]));
                     }
-                }
+                  }
             ],
             qr/^l(?:ist)?$/ => [
                 '', '',
                 sub {
                     my ($i, $s) = @_;
                     $i->write("Plugins: " . (join ", ", ($srv{$s}->list_plugins())) . "\n");
-                }
+                  }
             ],
             $default => [
                 '', '',
                 sub {
                     my ($i, $s) = @_;
                     $i->write("Plugins: " . (join ", ", ($srv{$s}->list_plugins())) . "\n");
-                }
+                  }
             ]
         ]
     ],
@@ -266,7 +266,7 @@ our $default = \('_default');
                     }
                     $srv{ $o{'name'} } = new MegaHAL::Server(\%o);
                     $i->write("Server ${o{name}} added successfully\n");
-                }
+                  }
             ],
             qr/^d(?:el)?$/ => [
                 '_server',
@@ -277,7 +277,7 @@ our $default = \('_default');
                     $srv{$s}->disconnect();
                     delete $srv{$s};
                     $i->write("[$s] Deleted!");
-                }
+                  }
             ],
             qr/^s(?:et)?$/ => [
                 '_server',
@@ -291,19 +291,19 @@ our $default = \('_default');
                     } else {
                         $i->write("\cC4No such option ${$_[1]}!\n");
                     }
-                }
+                  }
             ],
             qr/^l(?:ist)?$/ => [
                 '', '',
                 sub {
                     $_[0]->write(join " ", map { $srv{$_}->is_connecting() ? "\cC3$_ [UP]\cO" : "\cC5$_\cO" } keys %srv);
-                }
+                  }
             ],
             $default => [
                 '', '',
                 sub {
                     $_[0]->write(join " ", map { $srv{$_}->is_connecting() ? "\cC3$_ [UP]\cO" : "\cC5$_\cO" } keys %srv);
-                }
+                  }
             ]
         ]
     ],
@@ -321,7 +321,7 @@ our $default = \('_default');
                     } else {
                         $i->write("\cC4Error! User " . $u . ' probably already exists.');
                     }
-                }
+                  }
             ],
             qr/^d(?:(?:elete)|(?:estroy))?/ => [
                 'user', '',
@@ -333,13 +333,13 @@ our $default = \('_default');
                     } else {
                         $i->write("\cC4Error deleting user $u!");
                     }
-                }
+                  }
             ],
             qr/^l(?:ist)?$/ => [
                 '', '',
                 sub {
                     # XXX TODO!
-                }
+                  }
             ],
             qr/^a(?:llow)?$/ => [
                 '', undef,
@@ -372,7 +372,7 @@ our $default = \('_default');
                     } else {
                         $i->write("\cC4Error!");
                     }
-                }
+                  }
             ],
             qr/^(?:(?:d(?:eny)?)|(?:f(?:orbid)?))$/ => [
                 '', undef,
@@ -409,7 +409,7 @@ our $default = \('_default');
                     } else {
                         $i->write("\cC4Error!");
                     }
-                }
+                  }
             ],
             #TODO
             #qr/^l(?:ist)?$/ => ['',undef,[
@@ -423,7 +423,7 @@ our $default = \('_default');
         sub {
             my ($i, @args) = @_;
             $srv{ $args[0] }->send_srv($args[1] => (splice @args, 2));
-        }
+          }
     ],
     'c' => [
         'server', undef,
@@ -432,14 +432,14 @@ our $default = \('_default');
             my $s = shift @args;
             $srv{$s}->call_hook('consoleCommand', @args);
             $srv{$s}->call_hook('iConsoleCommand', $i, @args);
-        }
+          }
     ],
     'e' => [
         '', undef,
         sub {
             my ($i, @args) = @_;
             $i->write(eval(join ' ', @args));
-        }
+          }
     ]
 );
 

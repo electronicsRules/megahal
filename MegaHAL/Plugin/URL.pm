@@ -88,17 +88,17 @@ sub new {
                                         }
                                         my $s    = $dat->{'story'};
                                         my %catc = qw(
-                                        Ad 9
-                                        Al 14
-                                        Co 8
-                                        Cr 11
-                                        Da 5
-                                        Hu 14
-                                        Ra 12
-                                        Ro 6
-                                        Sa 4
-                                        Sl 12
-                                        Tr 7
+                                          Ad 9
+                                          Al 14
+                                          Co 8
+                                          Cr 11
+                                          Da 5
+                                          Hu 14
+                                          Ra 12
+                                          Ro 6
+                                          Sa 4
+                                          Sl 12
+                                          Tr 7
                                         );
                                         $catc{'Co'} = "7\cB";
                                         my ($fcl, $sfcl, $scl, $sccl) = ('', '', '', '');
@@ -180,7 +180,7 @@ sub new {
                                         my $desc     = $e->{'media:group'}->{'media:description'}->{value};
                                         my $upv      = metric($e->{'yt:rating'}->{'numLikes'}->{value});
                                         my $downv    = metric($e->{'yt:rating'}->{'numDislikes'}->{value});
-                                        my $cat      = join ",", grep { $_ } map { $_->{'label'}->{'value'} } @{ $e->{category} };
+                                        my $cat      = join ",", grep {$_} map { $_->{'label'}->{'value'} } @{ $e->{category} };
                                         $cat =~ s/ ?&amp; ?/&/g;
                                         my $author = $e->{author}->{name}->{value};
                                         my $ncomm  = metric($e->{'gd:comments'}->{'gd:feedLink'}->{countHint}->{value});

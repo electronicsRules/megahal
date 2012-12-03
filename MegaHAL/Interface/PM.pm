@@ -27,7 +27,7 @@ sub _auth {
         }
     );
 }
-sub type   { "PM" }
-sub atype  { 'irc' }
+sub type   {"PM"}
+sub atype  {'irc'}
 sub source { $_[0]->{'nick'} . '@' . $_[0]->{'server'} }
 1;

@@ -34,9 +34,9 @@ sub write {
     return print "[$$self{source}] $str\n";
 }
 
-sub type   { "UNKNOWN" }
+sub type   {"UNKNOWN"}
 sub source { $_[0]->{'source'} || "UNKNOWN" }
-sub atype  { 'user' }
+sub atype  {'user'}
 
 sub acan {
     my ($self, $plugin, $node, $channel, $cb) = @_;
