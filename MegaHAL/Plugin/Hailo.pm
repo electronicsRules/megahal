@@ -38,22 +38,27 @@ sub new {
 sub input {
     my ($self, $chan, $nick, $msg, $type) = @_;
     return unless $self->{'chans'}->{$chan};
+    my $sn       = $self->{'serv'}->name();
     my $has_sent = 0;
     OUTER: foreach (ref $self->{'chans'}->{$chan} eq 'ARRAY' ? @{ $self->{'chans'}->{$chan} } : $self->{'chans'}->{$chan}) {
         my $obj   = $_;
-        my $hailo = $self->{'hobj'}->{ $obj->{'bot'} };
+        my $bn    = $obj->{'bot'};
+        my $hailo = $self->{'hobj'}->{$bn};
         next if not $hailo;
         if ($obj->{'reply_ping'}) {
             my $own_nick = $self->{'serv'}->nick();
             if ($msg =~ /^$own_nick[: ,]/) {
+                $msg =~ /^$own_nick[: ,](.*)$/;
+                $msg = $1;
                 my $repl = '';
                 if ($obj->{'learn_reply'}) {
-                    $repl=$hailo->learn_reply($msg);
+                    $repl = $hailo->learn_reply($msg);
                 } else {
-                    $repl=$hailo->reply($msg);
+                    $repl = $hailo->reply($msg);
                 }
-                $repl="[Hailo] $repl" if $obj->{'tag'};
-                $self->{'serv'}->msg($chan,$repl);
+                $repl = "[Hailo] $repl" if $obj->{'tag'};
+                print "[$sn] {Hailo:$bn} $msg -> $repl";
+                $self->{'serv'}->msg($chan, $repl);
                 next;
             }
         }
@@ -61,11 +66,14 @@ sub input {
             foreach (@{ $obj->{'ignore_nicks'} || [] }) {
                 next OUTER if $nick eq $_;
             }
-            $msg =~ s/^\cAACTION/$nick /;
-            $msg = $nick . ' ' . $msg if $type eq 'ACTION';
+            $nick =~ tr/|_//d;
+            my $is_action = 0;
+            $is_action = 1 if $msg =~ s/^\cAACTION/$nick /;
+            $msg = $nick . ' ' . $msg if $type eq 'ACTION' or $is_action;
             next if $msg =~ /https?:\/\// or $msg =~ /^\// or $msg =~ /^[ \cB\cC0-9]*>/;
             $msg =~ s/^[^ :]+\K: /, /;
-            $msg =~ s/[._?^;-;]{4,}//g;
+            $msg =~ s/[-._?^;-;]{4,}//g;
+            $msg =~ tr/()[]{}<>""//d;
             next if $obj->{'min_length'} && length($msg) < $obj->{'min_length'};
             $hailo->learn($msg);
         }
@@ -93,12 +101,12 @@ sub upd_hobjs {
             print "[$sn] {Hailo:$_} Creating Hailo instance...\n";
             my %opts = %{ $self->{'bots'}->{$_} } if ref $self->{'bots'}->{$_} eq 'HASH';
             $self->{'hobj'}->{$_} = Hailo->new(
-                brain           => 'pldata/Hailo/' . $_ . '.sqlite',
+                brain           => 'pldata/Hailo/' . $sn . '-' . $_ . '.db',
                 order           => $opts{order} || 2,
                 engine_class    => $opts{engine} || 'Default',
                 storage_class   => 'SQLite',
                 tokenizer_class => $opts{tokenizer} || $opts{tokeniser} || 'Words',
-                engine_args     => $opts{engine_args} || {},
+                engine_args => $opts{engine_args} || {},
                 tokenizer_args => $opts{tokenizer_args} || $opts{tokeniser_args} || {}
             );
             print "[$sn] {Hailo:$_} Done!\n";
