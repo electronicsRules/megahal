@@ -145,10 +145,10 @@ sub new {
                                         }
                                         my ($B, $C, $U, $O, $V) = ("\cB", "\cC", "\c_", "\cO", "\cV");
                                         $o->{'tags'} =~ s/, /,/g;
-                                        $o->{'tags'} =~ s/artist:([^ ,]+),/artist:${C}06${1}${C}12,/g;
-                                        $o->{'tags'} =~ s/spoiler:([^ ,]+),/spoiler:${C}04${1}${C}12,/g;
-                                        $o->{'tags'} =~ s/((?:foalcon)|(?:suggestive)|(?:grimdark)|(?:questionable)),/${C}05${1}${C}12,/g;
                                         $o->{'tags'} = join ',', sort { $b =~ /^artist:/ <=> $a =~ /^artist:/ } sort { $b =~ /(?:(?:foalcon)|(?:suggestive)|(?:grimdark)|(?:questionable))/ <=> $a =~ /(?:(?:foalcon)|(?:suggestive)|(?:grimdark)|(?:questionable))/ } sort { $b =~ /^spoiler:/ <=> $a =~ /^spoiler:/ } split /,/, $o->{'tags'};
+                                        $o->{'tags'} =~ s/artist:([^ ,]+?),/artist:${C}06${1}${C}12${B}${B},/g;
+                                        $o->{'tags'} =~ s/spoiler:([^ ,]+?),/spoiler:${C}04${1}${C}12${B}${B},/g;
+                                        $o->{'tags'} =~ s/((?:foalcon)|(?:suggestive)|(?:grimdark)|(?:questionable)),/${C}05${1}${C}12${B}${B},/g;
                                         $serv->msg($chan, (sprintf("%s#%s (%s x %s) by ${C}9${B}%s${O} [${C}3+%s${C}4-%s${O}] [${C}12%s${O}]", $prefix, $o->{'id_number'}, $o->{'width'}, $o->{'height'}, $o->{'uploader'}, $o->{'upvotes'}, $o->{'downvotes'}, $o->{'tags'})));
                                         return 1;
                                     }
