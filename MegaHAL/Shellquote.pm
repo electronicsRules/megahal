@@ -1,5 +1,6 @@
 package MegaHAL::Shellquote;
 use Carp qw(carp croak cluck confess);
+use Text::Balanced qw(extract_multiple extract_delimited);
 
 sub new {
     my ($class, $bqcb) = @_;
@@ -14,74 +15,41 @@ sub bqcb {
 
 sub split {
     my ($self, $text) = @_;
-    my @prt = split //, $text;
+    my @fields=extract_multiple($text,[
+        {SQ => sub {extract_delimited($_[0],q{''})}},
+        {DQ => sub {extract_delimited($_[0],q{""})}},
+        {BQ => sub {extract_delimited($_[0],q{``})}}
+    ]);
     my @ret;
-    my $qt;
-    my $acc;
-    my $bqacc;
-    my $esc;
-    foreach (@prt) {
-        if (!$esc) {
-            if ($_ eq '\\') {
-                $esc = 1;
-            } elsif ($_ eq "'") {
-                if ($qt eq 's') {
-                    $qt = '';
-                } elsif ($qt eq '') {
-                    $qt = 's';
-                } else {
-                    $acc .= "'";
-                }
-            } elsif ($_ eq '"') {
-                if ($qt eq 'd') {
-                    $qt = '';
-                } elsif ($qt eq '') {
-                    $qt = 'd';
-                } else {
-                    $acc .= '"';
-                }
-            } elsif ($_ eq '`') {
-                if ($qt eq 'b') {
-                    $qt = '';
-                    if ($self->{'bqcb'}) {
-                        $bqacc .= $self->{'bqcb'}->($acc);
-                    } else {
-                        $bqacc .= '`' . $acc . '`';
-                    }
-                    $acc   = $bqacc;
-                    $bqacc = '';
-                } elsif ($qt eq '') {
-                    $qt    = 'b';
-                    $bqacc = $acc;
-                    $acc   = '';
-                } else {
-                    $acc .= '`';
-                }
-            } elsif ($qt eq '' and $_ eq ' ') {
-                push @ret, $acc;
-                $acc = '';
-            } else {
-                $acc .= $_;
+    my $was_spc;
+    my $lwspc;
+    foreach (@fields) {
+        my $r=ref $_;
+        my ($s,@other);
+        if ($r) {
+            $s=$$_;
+            $s=~s/^['"`](.*)['"`]$/$1/;
+            if ($r eq 'BQ') {
+                $s=($self->{'bqcb'}->($s))[0];
             }
-        } elsif ($esc == 2) {
-            if (/[A-Za-z]/) {
-                $acc .= chr(ord(uc($_)) - 65);
-            } else {
-                $acc .= '\\c' . $_;
+        }else{
+            if ($_=~/^ +/) {
+                $_=~/^( +)[^ ]?/;
+                $was_spc=$1;
+                $lwspc=$1 if $was_spc ne $_;
             }
-            $esc = 0;
-        } else {
-            if ($qt eq 'd' and $_ eq 'c') {    #\cX
-                $esc = 2;
-            } elsif ($qt eq 's' and $_ ne "'" and $_ ne '\\' and $_ ne '"' and $_ ne '`') {
-                $acc .= '\\' . $_;
-                $esc = 0;
-            } else {
-                $acc .= $_;
-                $esc = 0;
-            }
+            s/^ *([^ ].*[^ ]?) *$/$1/;
+            ($s,@other)=split / /, $_;
         }
+        if (!$lwspc && $ret[-1]) {
+            $ret[-1].=$lwspc.$s;
+        }elsif ($s) {
+            push @ret, $s;
+        }
+        push @ret,@other;
+        $lwspc=$was_spc;
+        $was_spc=0;
     }
-    return @ret, $acc;
+    return @ret;
 }
 1;
