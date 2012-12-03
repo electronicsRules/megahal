@@ -1,4 +1,5 @@
 package MegaHAL::Telnet;
+use 5.016;
 our $VERSION = '0.1';
 use AnyEvent;
 use AnyEvent::Handle;
@@ -96,11 +97,7 @@ sub errh {
 
 sub read_line {
     my ($id, $line) = @_;
-    $clients{$id}->{'hdl'}->push_read(
-        line => sub {
-            read_line($id, $_[1]);
-        }
-    );
+    $clients{$id}->{'hdl'}->push_read(line => __SUB__);
     main::console($line, $clients{$id}) unless $line eq "";
 }
 1;
