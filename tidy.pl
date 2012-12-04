@@ -18,9 +18,18 @@ find({wanted => sub {
     }
 }, no_chdir => 1},'.');
 $iq->enqueue(undef) foreach @wrk;
-$_->join foreach @wrk;
+our @ret;
+push @ret, $_->join foreach @wrk;
+our ($same,$diff,$err)=(0,0,0);
+foreach (@ret) {
+    if ($_ == 1) {$diff++}
+    if ($_ == 0) {$same++}
+    if ($_ == -1) {$err++}
+}
+printf "%-${len}s          \n",(sprintf "%02i changed, %02i unchanged, %02i errors",$diff,$same,$err);
 sub worker {
     my ($iq)=@_;
+    my @ret;
     while (defined(my $i=$iq->dequeue())) {
         my $name=$i;
         $name=~s/\//::/g if $name=~s/\.pm$//;
@@ -33,15 +42,19 @@ sub worker {
         threads::yield();
         if ($err) {
             printf "[%-${len}s] Error.\n",$name;
+            push @ret,-1;
         }else{
             #printf "[%-${len}s] Comparing to original...\n",$name;
             if (`diff -q $i $i.tdy`) {
                 printf "[%-${len}s] Changed\n",$name;
                 copy($i.'.tdy',$i);
+                push @ret, 0;
             }else{
-                printf "[%-${len}s] Same\n",$name
+                printf "[%-${len}s] Same\r",$name;
+                push @ret, 1;
             }
             unlink($i.".tdy");
         }
     }
+    return @ret;
 }
