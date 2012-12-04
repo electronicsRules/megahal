@@ -48,10 +48,10 @@ sub worker {
             if (`diff -q $i $i.tdy`) {
                 printf "[%-${len}s] Changed\n",$name;
                 copy($i.'.tdy',$i);
-                push @ret, 0;
+                push @ret, 1;
             }else{
                 printf "[%-${len}s] Same\r",$name;
-                push @ret, 1;
+                push @ret, 0;
             }
             unlink($i.".tdy");
         }
