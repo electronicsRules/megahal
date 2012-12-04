@@ -39,6 +39,8 @@ if (1 || !defined(&DB::DB)) {
 sub dbghook {
     print '';
 }
+our %outh;
+sub hout { $outh{ $outhn++ } = $_[0]; return $_[0] }
 
 sub outh {
     my ($str) = @_;
@@ -46,7 +48,10 @@ sub outh {
     foreach (values %srv) {
         eval { $_->call_hook('stdout', $str); };
     }
+    $_->($str) foreach values %outh;
 }
+our @errh;
+sub herr { $errh{ $errhn++ } = $_[0]; return $_[0] }
 
 sub errh {
     my ($str) = @_;
@@ -54,6 +59,7 @@ sub errh {
     foreach (values %srv) {
         eval { $_->call_hook('stderr', $str); };
     }
+    $_->($str) foreach values %errh;
 }
 
 our $cfg = {};

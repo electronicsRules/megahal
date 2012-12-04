@@ -1,5 +1,6 @@
 package MegaHAL::Interface;
 use Term::ANSIColor qw(colorstrip);
+use Scalar::Util qw(weaken);
 use MegaHAL::ACL;
 
 sub new {
@@ -17,6 +18,19 @@ sub new {
     bless $self, $class;
     $self->{'source'} = $self->source() if not $self->{'source'};
     return $self;
+}
+
+sub cerr {
+    my ($self) = @_;
+    $self->{'errh'} = sub {
+        $self->write("\cC5" . $_[0]);
+    };
+    weaken($::outh{ &::hout($self->{'errh'}) });
+}
+
+sub ecerr {
+    my ($self) = @_;
+    delete $self->{'errh'};
 }
 
 sub write {
