@@ -34,6 +34,27 @@ sub _warn ($) {
     return [ shortmess($_[0]), $lm ];
 }
 
+sub reg_cmd {
+    my ($self, $cmds, $lvl) = @_;
+    if ($self->c_is_pl($lvl)) {
+        my $plugin = substr caller($lvl - 1), length("MegaHAL::Plugin::");
+        push @{ $self->{'commands'}->{$plugin} }, { 'server' => $self->{'serv'}->name(), 'plugin' => $plugin } if not $self->{'commands'}->{$plugin};
+        foreach (@{$cmds}) {
+            my $fixed = {%$_};
+            $fixed->{'source'}->{'plugin'} = $plugin;
+            $fixed->{'source'}->{'server'} = $self->{'serv'}->name();
+            push @{ $self->{'commands'}->{$plugin} }, $fixed;
+        }
+    } else {
+        croak "Commands can only be registered from a plugin!\n";
+    }
+}
+
+sub commands {
+    my ($self) = @_;
+    return values %{ $self->{'commands'} };
+}
+
 sub error_cb {
     my ($self, $cb) = @_;
     $self->{'errcb'} = sub {
@@ -145,6 +166,7 @@ sub unload_plugin {
     foreach (@{ $self->{'reghooks'}->{$plugin} }) {
         $self->{'serv'}->unreg_cb($_);
     }
+    delete $self->{'commands'}->{$plugin};
     {
         local $@;
         eval {

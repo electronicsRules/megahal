@@ -41,10 +41,13 @@ sub dbghook {
     print '';
 }
 our %outh;
-sub hout { $outh{ $outhn++ } = $_[0]; return $_[0] }
+our $inouth = 0;
+sub hout { $outh{ $outhn++ } = $_[0]; return $outhn - 1 }
 
 sub outh {
     my ($str) = @_;
+    return if $inouth;
+    local $inouth = 1;
     MegaHAL::Telnet::outh($str);
     foreach (values %srv) {
         eval { $_->call_hook('stdout', $str); };
@@ -52,10 +55,13 @@ sub outh {
     $_->($str) foreach values %outh;
 }
 our @errh;
-sub herr { $errh{ $errhn++ } = $_[0]; return $_[0] }
+our $inerrh = 0;
+sub herr { $errh{ $errhn++ } = $_[0]; return $errhn - 1 }
 
 sub errh {
     my ($str) = @_;
+    return if $inerrh;
+    local $inerrh = 1;
     MegaHAL::Telnet::errh($str);
     foreach (values %srv) {
         eval { $_->call_hook('stderr', $str); };
@@ -106,35 +112,50 @@ END {
 }
 
 #$iface, $pd, $opts, @args
-our $core_cmds = [ {
-        name => [ 'quit', 'q' ],
+our $core_cmds = [
+    {},
+    {   name => [ 'quit', 'q' ],
         cb   => sub       { exit; }
     },
     {   name => [ 'connect', 'con' ],
         args => ['server'],
         cb   => sub {
             my ($i, $pd, $opts, @args) = @_;
-            $pd->{server}->connect();
+            $::srv{ $pd->{server} }->connect();
           }
     },
     {   name => [ 'disconnect', 'dis' ],
         args => [ 'cserver',    'string?' ],
         cb   => sub {
             my ($i, $pd, $opts, @args) = @_;
-            $pd->{server}->disconnect($args[0]);
+            $::srv{ $pd->{server} }->disconnect($args[0]);
+          }
+    },
+    {   name => [ 'eval', 'e' ],
+        args => ['string+'],
+        cb   => sub {
+            my ($i, $pd, $opts, @args) = @_;
+            $i->write(eval $args[0]);
+          }
+    },
+    {   name => [ 'print', 'p' ],
+        args => ['string+'],
+        cb   => sub {
+            my ($i, $pd, $opts, @args) = @_;
+            $i->write(Dump @args);
           }
     },
     {   name => [ 'help', 'h' ],
         args => ['*'],
         cb   => sub {
             my ($iface, $pd, $opts, @args) = @_;
-            $iface->write(MegaHAL::Shell::help($core_cmds, @args));
+            $iface->write(MegaHAL::Shell::help(cmdtree(), @args));
           }
     }
 ];
 
 sub console {
     my ($line, $iface) = @_;
-    MegaHAL::Shell::parse($iface, $line, [$core_cmds], {});
+    MegaHAL::Shell::parse($iface, $line, [ $core_cmds, map { $_->commands() } values %srv ], {});
 }
 init();

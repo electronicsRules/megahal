@@ -1,7 +1,7 @@
 package MegaHAL::Shell;
 use Text::ParseWords;
 use MegaHAL::Shellquote;
-use Getopt::Long;
+use Getopt::Long qw(GetOptionsFromArray);
 use Carp;
 use feature 'switch';
 
@@ -9,13 +9,13 @@ sub parse {
     my ($iface, $str, $tree, $pd) = @_;
     croak "Specify interface as the first argument!\n" unless UNIVERSAL::isa($iface, MegaHAL::Interface);
     croak "Specify command tree as the third argument!\n" unless ref $tree eq 'ARRAY';
-    my $sq = new MegaHAL::Shellquote(sub { &parse($iface, $_[0], $tree) });
+    my $sq = new MegaHAL::Shellquote(sub { &parse($iface, $_[0], $tree, $pd) });
     my @args = $sq->split($str);
     Getopt::Long::Configure(qw(default require_order pass_through));
     my @matches;
     eval {
         if (ref $tree->[0] eq 'ARRAY') {
-            push @matches, match($iface, $_, [], $pd || {}, [], [], @args) foreach @{$tree};
+            push @matches, match($iface, [ @{$_}[ 1 .. scalar(@{$_}) ] ], [], $pd || $_->[0] || {}, [], [], @args) foreach @{$tree};
         } else {
             @matches = match($iface, $tree, [], $pd || {}, [], [], @args);
         }
@@ -50,7 +50,7 @@ sub match {
     OUTER: foreach my $i (@$tree) {
         my @targs = @$_targs;
         my @perms = @$_perms;
-        my %opts  = $pd{opts};
+        my %opts  = %{ $pd{opts} };
         my %pd    = %$_pd;
         next unless $i->{'name'};
         my $match = 0;
@@ -61,15 +61,20 @@ sub match {
             }
         }
         next if not $match;
-        my $cname = ref $i->{'name'} ? $i->{'name'}->[0] : $i->{'name'};
         my %opts;
+        my $cname = ref $i->{'name'} ? $i->{'name'}->[0] : $i->{'name'};
+        $iface->cerr();
+        my $ret = GetOptionsFromArray(\@args, \%pd, 'server=s', 'target=s', 'channel=s', 'plugin=s');
         if ($i->{'opts'}) {
-            $iface->cerr();
-            my $ret = GetOptionsFromArray(\@args, \%pd, 'server=s', 'target=s', 'channel=s', 'plugin=s');
-            my $ret2 = GetOptionsFromArray(\@args, \%opts, @{ $i->{'opts'} });
-            $iface->ecerr();
-            next unless $ret and $ret2;
+            $pd{opts} = {} if not $pd{opts};
+            my $ret2 = GetOptionsFromArray(\@args, $pd{opts}, @{ $i->{'opts'} });
+            unless ($ret2) {
+                $iface->ecerr();
+                $iface->write("opts error!");
+                next;
+            }
         }
+        $iface->ecerr();
         if (ref $i->{'source'} eq 'HASH') {
             if ($pd{server} and $i->{'source'}->{'server'} and $i->{'source'}->{'server'} ne $pd{server}) {
                 next;
@@ -83,14 +88,14 @@ sub match {
         push @perms, [ $pd{plugin} || 'core', join(".", @stk, $cname) ];
         push @perms, [ $pd{plugin} || 'core', join(".", @stk, '*') ];
         if ($pd{server}) {
-            push @perms, [ '*@' . $pd{server}->name(), join(".", @stk, $cname) ];
-            push @perms, [ '*@' . $pd{server}->name(), join(".", @stk, '*') ];
-            push @perms, [ $pd{plugin} || 'core@' . $pd{server}->name(), join(".", @stk, $cname) ];
-            push @perms, [ $pd{plugin} || 'core@' . $pd{server}->name(), join(".", @stk, '*') ];
+            push @perms, [ '*@' . $pd{server}, join(".", @stk, $cname) ];
+            push @perms, [ '*@' . $pd{server}, join(".", @stk, '*') ];
+            push @perms, [ $pd{plugin} || 'core@' . $pd{server}, join(".", @stk, $cname) ];
+            push @perms, [ $pd{plugin} || 'core@' . $pd{server}, join(".", @stk, '*') ];
         }
         foreach (@{ $i->{'args'} }) {
             my $nea;
-            $nea = 1 if not defined $args[0];
+            $nea = 1 if scalar(@args) == 0;
             given ($_) {
                 when ('string') {
                     push @targs, shift @args;
@@ -113,7 +118,7 @@ sub match {
                 }
                 when ('channel') {
                     if ($pd{server}) {
-                        if ($pd{server}->is_channel_name($args[0])) {
+                        if ($::srv{ $pd{server} }->is_channel_name($args[0])) {
                             push @targs, shift @args;
                         } else {
                             error($iface, [ @stk, $cname ], "Not a channel name!");
@@ -125,7 +130,7 @@ sub match {
                 when ('cserver') {
                     if ($::srv{ $args[0] }) {
                         if ($::srv{ $args[0] }->is_connected()) {
-                            $pd{server} = $::srv{ $args[0] };
+                            $pd{server} = $args[0];
                             push @targs, shift @args;
                         } else {
                             error($iface, [ @stk, $cname ], "The specified server is not connected.");
@@ -136,7 +141,7 @@ sub match {
                 }
                 when ('server') {
                     if ($::srv{ $args[0] }) {
-                        $pd{server} = $::srv{ $args[0] };
+                        $pd{server} = $args[0];
                         push @targs, shift @args;
                     } else {
                         error($iface, [ @stk, $cname ], "No such server!");
@@ -146,7 +151,7 @@ sub match {
                     push @targs, shift @args while @args;
                 }
             }
-            error($iface, [ @stk, $cname ], "Not enough arguments!");
+            error($iface, [ @stk, $cname ], "Not enough arguments!") if $nea;
         }
         if ($i->{'sopts'}) {
             $iface->cerr();
@@ -170,6 +175,11 @@ sub match {
 
 sub help {
     my ($tree, @args) = @_;
+    if (ref $tree->[0] eq 'ARRAY') {
+        my @ret;
+        push @ret, help($_, @args) foreach @{$tree};
+        return join "\n", @ret;
+    }
     my $subtree = $tree;
     my @help;
     foreach (@{$tree}) {

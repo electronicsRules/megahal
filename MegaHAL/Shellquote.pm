@@ -65,7 +65,7 @@ sub split {
         }
         push @ret, @other;
         $lwspc   = $was_spc;
-        $was_spc = 0;
+        $was_spc = '';
     }
     return @ret;
 }

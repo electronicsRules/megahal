@@ -102,7 +102,7 @@ sub is_oper {
     return 1 if $self->{'oper'} ne '' and $self->{'status'} > 3;
 }
 
-foreach (qw(load_plugin unload_plugin new_hook call_hook list_plugin_hooks list_hook_plugins list_plugins is_loaded error_cb has_hook)) {
+foreach (qw(load_plugin unload_plugin new_hook call_hook list_plugin_hooks list_hook_plugins list_plugins is_loaded error_cb has_hook commands)) {
     eval '*' . $_ . q# = sub {
         my ($self,@args)=@_;
         return $self->{'plugins'}-># . $_ . q#(@args);
@@ -128,6 +128,11 @@ sub reg_cb {
             }
         }
     }
+}
+
+sub reg_cmd {
+    my ($self, $cmds) = @_;
+    $self->{'plugins'}->reg_cmd($cmds, 2);
 }
 
 sub connect {
