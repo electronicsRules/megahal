@@ -10,6 +10,10 @@ our %clients;
 our $nid = 0;
 
 sub init {
+    unless (-r 'ssl/megahal.cert' and -r 'ssl/megahal.cert.key') {
+        print STDERR "Can't initialise TLSTelnet on port 9000 - no certificate installed!\n";
+        return;
+    }
     tcp_server(
         undef, 9000,
         sub {
