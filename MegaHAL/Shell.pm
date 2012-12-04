@@ -6,13 +6,13 @@ use Carp;
 use feature 'switch';
 
 sub parse {
-    my ($iface, $str, $tree) = @_;
+    my ($iface, $str, $tree, $pd) = @_;
     croak "Specify interface as the first argument!\n" unless UNIVERSAL::isa($iface, MegaHAL::Interface);
     croak "Specify command tree as the third argument!\n" unless ref $tree eq 'ARRAY';
     my $sq = new MegaHAL::Shellquote(sub { &parse($iface, $_[0], $tree) });
     my @args = $sq->parse($str);
     Getopt::Long::Configure(qw(default require_order pass_through));
-    match($iface, $tree, [], {}, [], @args);
+    match($iface, $tree, [], $pd || {}, [], @args);
 }
 
 sub match {
@@ -22,6 +22,7 @@ sub match {
     my %opts  = $pd{opts};
     my @targs = @$_targs;
     my $name  = shift @args;
+    my @matches;
     OUTER: foreach my $i (@$tree) {
         next unless $i->{'name'};
         my $match = 0;
@@ -39,8 +40,9 @@ sub match {
         if ($i->{'opts'}) {
             $iface->cerr();
             my $ret = GetOptionsFromArray(\@args, \%opts, @{ $i->{'opts'} });
+            my $ret2 = GetOptionsFromArray(\@args, \%pd, 'server=s', 'target=s', 'channel=s', 'plugin=s');
             $iface->ecerr();
-            next unless $ret;
+            next unless $ret and $ret2;
         }
         foreach (@{ $i->{'args'} }) {
             given ($_) {
@@ -97,14 +99,36 @@ sub match {
             next unless $ret;
         }
         if ($i->{'sub'} and $args[0]) {
-            return if match($iface, $i->{'sub'}, [ @stk, $cname ], \%pd, \@targs, @args);
+            push @matches, match($iface, $i->{'sub'}, [ @stk, $cname ], \%pd, \@targs, @args);
         }
         if ($i->{'cb'}) {
-            $i->{'cb'}->($iface, \%pd, \%opts, @targs);
-            return 1;
+            push @matches, [[@stk, $cname],$i->{'cb'},\%pd, \%opts, @targs];
         }
     }
-    return 0;
+    return @matches;
+}
+
+sub help {
+    my ($tree, @args)=@_;
+    my $subtree=$tree;
+    my @stk;
+    OUTER: foreach my $a (@args) {
+        foreach my $st (@{$subtree}) {
+            foreach (ref $st->{'name'} ? @{$st->{'name'}} : $st->{'name'}) {
+                if (lc $_ eq lc $a) {
+                    push @stk, $_;
+                    $subtree=$st;
+                    next OUTER;
+                }
+            }
+        }
+        last;
+    }
+    my @help;
+    foreach my $st (@{$subtree}) {
+        push @help, (join " ", @stk);
+    }
+    return join "\n", @help;
 }
 
 sub error {
