@@ -7,9 +7,6 @@ $|=1;
 my $iq=Thread::Queue->new();
 my @wrk;
 our $len=42;
-foreach (1..8) {
-    push @wrk,threads->create('worker',$iq);
-}
 find({wanted => sub {
     if (-f and -r and /\.(?:(?:p[lm]x?)|t)$/) {
         $_=~s/^\.\///;
@@ -17,6 +14,11 @@ find({wanted => sub {
         $iq->enqueue($_);
     }
 }, no_chdir => 1},'.');
+my $n=$iq->pending;
+our $pbw=$n > 80 ? 80 : $n;
+foreach (1..8) {
+    push @wrk,threads->create('worker',$iq,$n);
+}
 $iq->enqueue(undef) foreach @wrk;
 our @ret;
 push @ret, $_->join foreach @wrk;
@@ -28,7 +30,7 @@ foreach (@ret) {
 }
 printf "%-${len}s          \n",(sprintf "%02i changed, %02i unchanged, %02i errors",$diff,$same,$err);
 sub worker {
-    my ($iq)=@_;
+    my ($iq,$n)=@_;
     my @ret;
     while (defined(my $i=$iq->dequeue())) {
         my $name=$i;
@@ -50,7 +52,7 @@ sub worker {
                 copy($i.'.tdy',$i);
                 push @ret, 1;
             }else{
-                printf "[%-${len}s] Same\r",$name;
+                printf "[%-${len}s] Same    [%-${pbw}s]\r",$name,('=' x ((1-(($iq->pending()-1)/$n)) * ($pbw)));
                 push @ret, 0;
             }
             unlink($i.".tdy");
