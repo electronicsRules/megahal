@@ -10,9 +10,17 @@ sub parse {
     croak "Specify interface as the first argument!\n" unless UNIVERSAL::isa($iface, MegaHAL::Interface);
     croak "Specify command tree as the third argument!\n" unless ref $tree eq 'ARRAY';
     my $sq = new MegaHAL::Shellquote(sub { &parse($iface, $_[0], $tree) });
-    my @args = $sq->parse($str);
+    my @args = $sq->split($str);
     Getopt::Long::Configure(qw(default require_order pass_through));
-    my @matches = match($iface, $tree, [], $pd || {}, [], [], @args);
+    my @matches;
+    eval {
+        if (ref $tree->[0] eq 'ARRAY') {
+            push @matches, match($iface, $_, [], $pd || {}, [], [], @args) foreach @{$tree};
+        } else {
+            @matches = match($iface, $tree, [], $pd || {}, [], [], @args);
+        }
+    };
+    return if $@;
     if (scalar(@matches) > 1) {    #Multiple suitable commands.
         $iface->write("\cC5Multiple commands matched.");
         return 2;
@@ -70,11 +78,19 @@ sub match {
                 next;
             }
         }
-        push @perms, [ $pd{plugin} || 'core', join(".", @stk, $cname) ];
         push @perms, [ '*', join(".", @stk, $cname) ];
-        push @perms, [ $pd{plugin} || 'core', join(".", @stk) ];
-        push @perms, [ '*', join(".", @stk) ];
+        push @perms, [ '*', join(".", @stk, '*') ];
+        push @perms, [ $pd{plugin} || 'core', join(".", @stk, $cname) ];
+        push @perms, [ $pd{plugin} || 'core', join(".", @stk, '*') ];
+        if ($pd{server}) {
+            push @perms, [ '*@' . $pd{server}->name(), join(".", @stk, $cname) ];
+            push @perms, [ '*@' . $pd{server}->name(), join(".", @stk, '*') ];
+            push @perms, [ $pd{plugin} || 'core@' . $pd{server}->name(), join(".", @stk, $cname) ];
+            push @perms, [ $pd{plugin} || 'core@' . $pd{server}->name(), join(".", @stk, '*') ];
+        }
         foreach (@{ $i->{'args'} }) {
+            my $nea;
+            $nea = 1 if not defined $args[0];
             given ($_) {
                 when ('string') {
                     push @targs, shift @args;
@@ -83,6 +99,10 @@ sub match {
                     push @targs, join ' ', @args;
                     @args = ();
                     last;
+                }
+                when ('string?') {
+                    push @targs, shift @args;
+                    $nea = 0;
                 }
                 when ('target') {
                     if ($args[0] =~ /^[#&]?[a-zA-Z_0-9-]+$/) {
@@ -106,6 +126,7 @@ sub match {
                     if ($::srv{ $args[0] }) {
                         if ($::srv{ $args[0] }->is_connected()) {
                             $pd{server} = $::srv{ $args[0] };
+                            push @targs, shift @args;
                         } else {
                             error($iface, [ @stk, $cname ], "The specified server is not connected.");
                         }
@@ -116,11 +137,16 @@ sub match {
                 when ('server') {
                     if ($::srv{ $args[0] }) {
                         $pd{server} = $::srv{ $args[0] };
+                        push @targs, shift @args;
                     } else {
                         error($iface, [ @stk, $cname ], "No such server!");
                     }
                 }
+                when ('*') {
+                    push @targs, shift @args while @args;
+                }
             }
+            error($iface, [ @stk, $cname ], "Not enough arguments!");
         }
         if ($i->{'sopts'}) {
             $iface->cerr();
@@ -132,7 +158,11 @@ sub match {
             push @matches, match($iface, $i->{'sub'}, [ @stk, $cname ], \%pd, \@targs, \@perms, @args);
         }
         if ($i->{'cb'}) {
-            push @matches, [ [ @stk, $cname ], \@perms, $i->{'cb'}, \%pd, \%opts, @targs ];
+            if (scalar(@args) > 0) {
+                error($iface, [ @stk, $cname ], "Too many arguments!");
+            } else {
+                push @matches, [ [ @stk, $cname ], \@perms, $i->{'cb'}, \%pd, \%opts, @targs ];
+            }
         }
     }
     return @matches;
@@ -141,29 +171,18 @@ sub match {
 sub help {
     my ($tree, @args) = @_;
     my $subtree = $tree;
-    my @stk;
-    OUTER: foreach my $a (@args) {
-        foreach my $st (@{$subtree}) {
-            foreach (ref $st->{'name'} ? @{ $st->{'name'} } : $st->{'name'}) {
-                if (lc $_ eq lc $a) {
-                    push @stk, $_;
-                    $subtree = $st;
-                    next OUTER;
-                }
-            }
-        }
-        last;
-    }
     my @help;
-    foreach my $st (@{$subtree}) {
-        push @help, (join " ", @stk);
+    foreach (@{$tree}) {
+        push @help, sprintf "%-20s " . ('%-12s ' x scalar(@{ $_->{'args'} })) . " %s", $_->{'name'}->[0], @{ $_->{'args'} }, $_->{'desc'};
+        push @help, help($_->{'sub'}, splice(@args, 1)) if $_->{'sub'};
     }
     return join "\n", @help;
 }
 
 sub error {
     my ($iface, $stk, $text) = @_;
-    $iface->write("\cC5" . (join " ", @$stk) . " " . $text);
+    $iface->write("\cC5" . $text);
+    die $text;
 }
 1;
 
