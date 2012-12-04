@@ -12,18 +12,38 @@ sub parse {
     my $sq = new MegaHAL::Shellquote(sub { &parse($iface, $_[0], $tree) });
     my @args = $sq->parse($str);
     Getopt::Long::Configure(qw(default require_order pass_through));
-    match($iface, $tree, [], $pd || {}, [], @args);
+    my @matches = match($iface, $tree, [], $pd || {}, [], [], @args);
+    if (scalar(@matches) > 1) {    #Multiple suitable commands.
+        $iface->write("\cC5Multiple commands matched.");
+        return 2;
+    } elsif (scalar(@matches) == 0) {    #No commands.
+        $iface->write("\cC5No such command.");
+        return 1;
+    } else {
+        $iface->acan(
+            $matches[0]->[1],
+            sub {
+                if ($_[0]) {
+                    $matches[0]->[2]->($iface, splice(@{ $matches[0] }, 3));
+                } else {
+                    $iface->write("\cC5Access denied.");
+                }
+            }
+        );
+        return 0;
+    }
 }
 
 sub match {
-    my ($iface, $tree, $_stk, $_pd, $_targs, @args) = @_;
-    my @stk   = @$_stk;
-    my %pd    = %$_pd;
-    my %opts  = $pd{opts};
-    my @targs = @$_targs;
-    my $name  = shift @args;
+    my ($iface, $tree, $_stk, $_pd, $_targs, $_perms, @args) = @_;
+    my @stk  = @$_stk;
+    my $name = shift @args;
     my @matches;
     OUTER: foreach my $i (@$tree) {
+        my @targs = @$_targs;
+        my @perms = @$_perms;
+        my %opts  = $pd{opts};
+        my %pd    = %$_pd;
         next unless $i->{'name'};
         my $match = 0;
         foreach (ref $i->{'name'} ? @{ $i->{'name'} } : $i->{'name'}) {
@@ -34,16 +54,26 @@ sub match {
         }
         next if not $match;
         my $cname = ref $i->{'name'} ? $i->{'name'}->[0] : $i->{'name'};
-        local @args  = @args;
-        local @targs = @targs;
         my %opts;
         if ($i->{'opts'}) {
             $iface->cerr();
-            my $ret = GetOptionsFromArray(\@args, \%opts, @{ $i->{'opts'} });
-            my $ret2 = GetOptionsFromArray(\@args, \%pd, 'server=s', 'target=s', 'channel=s', 'plugin=s');
+            my $ret = GetOptionsFromArray(\@args, \%pd, 'server=s', 'target=s', 'channel=s', 'plugin=s');
+            my $ret2 = GetOptionsFromArray(\@args, \%opts, @{ $i->{'opts'} });
             $iface->ecerr();
             next unless $ret and $ret2;
         }
+        if (ref $i->{'source'} eq 'HASH') {
+            if ($pd{server} and $i->{'source'}->{'server'} and $i->{'source'}->{'server'} ne $pd{server}) {
+                next;
+            }
+            if ($pd{plugin} and $i->{'source'}->{'plugin'} and $i->{'source'}->{'plugin'} ne $pd{plugin}) {
+                next;
+            }
+        }
+        push @perms, [ $pd{plugin} || 'core', join(".", @stk, $cname) ];
+        push @perms, [ '*', join(".", @stk, $cname) ];
+        push @perms, [ $pd{plugin} || 'core', join(".", @stk) ];
+        push @perms, [ '*', join(".", @stk) ];
         foreach (@{ $i->{'args'} }) {
             given ($_) {
                 when ('string') {
@@ -99,25 +129,25 @@ sub match {
             next unless $ret;
         }
         if ($i->{'sub'} and $args[0]) {
-            push @matches, match($iface, $i->{'sub'}, [ @stk, $cname ], \%pd, \@targs, @args);
+            push @matches, match($iface, $i->{'sub'}, [ @stk, $cname ], \%pd, \@targs, \@perms, @args);
         }
         if ($i->{'cb'}) {
-            push @matches, [[@stk, $cname],$i->{'cb'},\%pd, \%opts, @targs];
+            push @matches, [ [ @stk, $cname ], \@perms, $i->{'cb'}, \%pd, \%opts, @targs ];
         }
     }
     return @matches;
 }
 
 sub help {
-    my ($tree, @args)=@_;
-    my $subtree=$tree;
+    my ($tree, @args) = @_;
+    my $subtree = $tree;
     my @stk;
     OUTER: foreach my $a (@args) {
         foreach my $st (@{$subtree}) {
-            foreach (ref $st->{'name'} ? @{$st->{'name'}} : $st->{'name'}) {
+            foreach (ref $st->{'name'} ? @{ $st->{'name'} } : $st->{'name'}) {
                 if (lc $_ eq lc $a) {
                     push @stk, $_;
-                    $subtree=$st;
+                    $subtree = $st;
                     next OUTER;
                 }
             }
@@ -135,6 +165,7 @@ sub error {
     my ($iface, $stk, $text) = @_;
     $iface->write("\cC5" . (join " ", @$stk) . " " . $text);
 }
+1;
 
 =pod
 

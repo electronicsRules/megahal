@@ -53,23 +53,37 @@ sub source { $_[0]->{'source'} || "UNKNOWN" }
 sub atype  {'user'}
 
 sub acan {
-    my ($self, $plugin, $node, $channel, $cb) = @_;
+    my ($self, $nodes, $cb) = @_;
     if ($self->atype() eq 'irc' && defined($self->{'server'})) {
         return $self->auth(
             sub {
                 return 0 if not $_[0];
-                my $res = MegaHAL::ACL::has_ircnode($self->{'server'}, $_[0], $plugin, $node, $channel);
-                $cb->($res) if $cb;
-                return $res;
+                my $nick = $_[0];
+                my $res  = 0;
+                foreach (@$nodes) {
+                    if (MegaHAL::ACL::has_ircnode($self->{'server'}, $nick, $_->[0], $_->[1], $_->[2])) {
+                        $res = 1;
+                        last;
+                    }
+                }
+                $cb->($res, $nick) if $cb;
+                return wantarray ? ($res, $nick) : $res;
             }
         );
     } elsif ($self->atype() eq 'user') {
         return $self->auth(
             sub {
                 return 0 if not $_[0];
-                my $res = MegaHAL::ACL::has_node($_[0], $plugin, $node);
-                $cb->($res) if $cb;
-                return $res;
+                my $user = $_[0];
+                my $res  = 0;
+                foreach (@$nodes) {
+                    if (MegaHAL::ACL::has_node($user, $_->[1], $_->[2])) {
+                        $res = 1;
+                        last;
+                    }
+                }
+                $cb->($res, $user) if $cb;
+                return wantarray ? ($res, $user) : $res;
             }
         );
     } elsif ($self->atype() eq 'always') {
