@@ -22,6 +22,19 @@ sub new {
 
 sub cerr {
     my ($self) = @_;
+    $self->{'errh'} = sub {
+        $self->write("\cC5" . $_[0]);
+    };
+    weaken($::outh{ &::hout($self->{'errh'}) });
+}
+
+sub ecerr {
+    my ($self) = @_;
+    delete $self->{'errh'};
+}
+
+sub cerr {
+    my ($self) = @_;
     $self->{'errh'} = &::herr(
         sub {
             $self->write("\cC5" . $_[0]);
