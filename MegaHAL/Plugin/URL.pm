@@ -60,7 +60,7 @@ sub new {
                                         #$url=~m##;
                                         #$favme="${U}http://fav.me/$1${O} - " ;
                                         #}
-                                        $serv->msg($chan, (sprintf("%s%s${C}2${B}%s${O} by ${C}9${B}%s${O} [${C}6%s${O}]", $prefix, $favme, $o->{'title'}, $o->{'author_name'}, $o->{'category'})));
+                                        $serv->msg($chan, (sprintf("%s%s${C}2${B}%s${O} by ${C}3${B}%s${O} [${C}6%s${O}]", $prefix, $favme, $o->{'title'}, $o->{'author_name'}, $o->{'category'})));
                                         return 1;
                                     }
                                 );
@@ -114,7 +114,7 @@ sub new {
                                         }
                                         chop $fcl;
                                         chop $sfcl;
-                                        my $oa = sprintf("%s${C}2${B}%s${O} by ${C}9${B}%s${O} [${C}6%s;%s;%sc;%sw;%sv${O}] [${C}6${B}%s${O}] [${C}3+%s${C}4-%s${O}] [%s] ", $prefix, $s->{'title'}, $s->{'author'}->{'name'}, $s->{'content_rating_text'}, $s->{'status'}, metric($s->{'chapter_count'}), metric($s->{'words'}), metric($s->{'total_views'}), time2str('%H%MGMT %d%b%y', $s->{'date_modified'}), metric($s->{'likes'}), metric($s->{'dislikes'}), $sfcl);
+                                        my $oa = sprintf("%s${C}2${B}%s${O} by ${C}3${B}%s${O} [${C}6%s;%s;%sc;%sw;%sv${O}] [${C}6${B}%s${O}] [${C}3+%s${C}4-%s${O}] [%s] ", $prefix, $s->{'title'}, $s->{'author'}->{'name'}, $s->{'content_rating_text'}, $s->{'status'}, metric($s->{'chapter_count'}), metric($s->{'words'}), metric($s->{'total_views'}), time2str('%H%MGMT %d%b%y', $s->{'date_modified'}), metric($s->{'likes'}), metric($s->{'dislikes'}), $sfcl);
                                         #Ballpark guess... might be three lines every now and then
                                         my $sdesc = shorten(remove_bbcode($s->{'description'}));
                                         my $mlen  = 841 - 15;
@@ -149,7 +149,7 @@ sub new {
                                         $o->{'tags'} =~ s/artist:([^ ,]+?),/artist:${C}06${1}${C}12${B}${B},/g;
                                         $o->{'tags'} =~ s/spoiler:([^ ,]+?),/spoiler:${C}04${1}${C}12${B}${B},/g;
                                         $o->{'tags'} =~ s/((?:foalcon)|(?:suggestive)|(?:grimdark)|(?:questionable)),/${C}05${1}${C}12${B}${B},/g;
-                                        $serv->msg($chan, (sprintf("%s#%s (%s x %s) by ${C}9${B}%s${O} [${C}3+%s${C}4-%s${O}] [${C}12%s${O}]", $prefix, $o->{'id_number'}, $o->{'width'}, $o->{'height'}, $o->{'uploader'}, $o->{'upvotes'}, $o->{'downvotes'}, $o->{'tags'})));
+                                        $serv->msg($chan, (sprintf("%s#%s (%s x %s) by ${C}3${B}%s${O} [${C}3+%s${C}4-%s${O}] [${C}12%s${O}]", $prefix, $o->{'id_number'}, $o->{'width'}, $o->{'height'}, $o->{'uploader'}, $o->{'upvotes'}, $o->{'downvotes'}, $o->{'tags'})));
                                         return 1;
                                     }
                                 );
@@ -189,7 +189,7 @@ sub new {
                                         my $cban   = join ",", map { $_->{value} } grep { $_->{type} eq 'country' } (ref $e->{'media:group'}->{'media:restriction'} eq 'ARRAY' ? @{ $e->{'media:group'}->{'media:restriction'} } : $e->{'media:group'}->{'media:restriction'});
                                         my ($B, $C, $U, $O, $V) = ("\cB", "\cC", "\c_", "\cO", "\cV");
                                         my $sdesc = shorten($desc);
-                                        my $oa    = sprintf "%s${C}2${B}%s${O} by ${C}9${B}%s${O} [%s] [%s] [${C}3+%s${C}4-%s${O},%sc,%sv,%sf]%s ", $prefix, $title, $author, $duration, $cat, $upv, $downv, $ncomm, $views, $favs, ($cban ? " ${C}5$cban${O} " : '');
+                                        my $oa    = sprintf "%s${C}2${B}%s${O} by ${C}3${B}%s${O} [%s] [%s] [${C}3+%s${C}4-%s${O},%sc,%sv,%sf]%s ", $prefix, $title, $author, $duration, $cat, $upv, $downv, $ncomm, $views, $favs, ($cban ? " ${C}5$cban${O} " : '');
                                         my $mlen  = 841 - 15;
                                         if (length($sdesc) >= ($mlen - 5) - length($oa)) {
                                             $sdesc = substr($sdesc, 0, ($mlen - 5) - length($oa)) . '[...]';

@@ -10,14 +10,14 @@ sub new {
             my $message = $ircmsg->{'params'}->[1];
             return if $command ne 'PRIVMSG';
             my ($modes, $source, $ident) = $this->split_nick_mode($ircmsg->{'prefix'});
-            $serv->msg($_, " <\cC5$source\cO> $message") foreach @{ $self->{'chans'} };
+            $serv->send_long_message('utf8', 0, NOTICE => $_, " <\cC5$source\cO> $message") foreach @{ $self->{'chans'} };
         }
     );
     $serv->reg_cb(
         ctcp => sub {
             my ($this, $src, $target, $tag, $msg, $type) = @_;
             if ($tag eq 'ACTION' && $type eq 'PRIVMSG' and not $serv->is_channel_name($target)) {
-                $serv->msg($_, " * \cC5$src\cO $msg") foreach @{ $self->{'chans'} };
+                $serv->send_long_message('utf8', 0, NOTICE => $_, " * \cC5$src\cO $msg") foreach @{ $self->{'chans'} };
             }
         }
     );
@@ -29,10 +29,10 @@ sub new {
             my $tgt     = shift @args;
             my $msg     = join ' ', @args;
             if ($cmd eq 'msg' || $cmd eq 'say') {
-                $serv->msg($_, "\cC3$nick\cO -> $tgt $msg") foreach @{ $self->{'chans'} };
+                $serv->send_long_message('utf8', 0, PRIVMSG => $_, "\cC3$nick\cO -> $tgt $msg") foreach @{ $self->{'chans'} };
                 $serv->msg($tgt, $msg);
             } elsif ($cmd eq 'act') {
-                $serv->msg($_, "\cC3$nick\cO -> $tgt * $ownnick $msg") foreach @{ $self->{'chans'} };
+                $serv->send_long_message('utf8', 0, PRIVMSG => $_, "\cC3$nick\cO -> $tgt * $ownnick $msg") foreach @{ $self->{'chans'} };
                 $serv->msg($tgt, "\cAACTION $msg\cA");
             } elsif ($cmd eq 'help') {
                 my $sn = $serv->name();
