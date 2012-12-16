@@ -62,11 +62,10 @@ sub get_auth_info {
         $clients{$id}->{'auth'} = 1;
         if ($clients{$id}->acan('core', 'telnet') || $clients{$id}->acan('*', '*') || $clients{$id}->acan('core', '*')) {
             $clients{$id}->{'hdl'}->push_write("MegaHAL v${MegaHAL::VERSION} SSL telnet console v$VERSION\n");
-            $clients{$id}->{'hdl'}->push_read(
-                line => sub {
-                    read_line($id, $_[1]);
-                }
-            );
+            $clients{$id}->{'rlcb'} = sub {
+                read_line($id, $_[1]);
+            };
+            $clients{$id}->{'hdl'}->push_read(line => $clients{$id}->{'rlcb'});
             return;
         }
     }
@@ -101,7 +100,7 @@ sub errh {
 
 sub read_line {
     my ($id, $line) = @_;
-    $clients{$id}->{'hdl'}->push_read(line => __SUB__);
+    $clients{$id}->{'hdl'}->push_read(line => $clients{$id}->{'rlcb'});
     main::console($line, $clients{$id}) unless $line eq "";
 }
 1;
