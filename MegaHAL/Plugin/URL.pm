@@ -7,6 +7,7 @@ use YAML::Any qw(Dump);
 use Time::HiRes qw(time);
 use XML::Bare;
 use MegaHAL::Cache qw(cache_http);
+use HTML::Entities;
 
 sub new {
     my ($class, $serv) = @_;
@@ -116,7 +117,7 @@ sub new {
                                         chop $sfcl;
                                         my $oa = sprintf("%s${C}2${B}%s${O} by ${C}3${B}%s${O} [${C}6%s;%s;%sc;%sw;%sv${O}] [${C}6${B}%s${O}] [${C}3+%s${C}4-%s${O}] [%s] ", $prefix, $s->{'title'}, $s->{'author'}->{'name'}, $s->{'content_rating_text'}, $s->{'status'}, metric($s->{'chapter_count'}), metric($s->{'words'}), metric($s->{'total_views'}), time2str('%H%MGMT %d%b%y', $s->{'date_modified'}), metric($s->{'likes'}), metric($s->{'dislikes'}), $sfcl);
                                         #Ballpark guess... might be three lines every now and then
-                                        my $sdesc = shorten(remove_bbcode($s->{'description'}));
+                                        my $sdesc = shorten(remove_bbcode(decode_entities($s->{'description'})));
                                         my $mlen  = 841 - 15;
                                         if (length($sdesc) >= ($mlen - 5) - length($oa)) {
                                             $sdesc = substr($sdesc, 0, ($mlen - 5) - length($oa)) . '[...]';
@@ -270,6 +271,7 @@ sub remove_bbcode {
     $str =~ s#\[/?[biu]\]##g;
     $str =~ s#\[color=[^\]]+\]##g;
     $str =~ s#\[/color\]##g;
+    $str =~ s#\[quote\](.*?)\[/quote\]#$1#g;
     return $str;
 }
 1;
