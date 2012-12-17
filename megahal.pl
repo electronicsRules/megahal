@@ -115,7 +115,7 @@ END {
 our $core_cmds = [
     {},
     {   name => [ 'quit', 'q' ],
-        cb   => sub       { exit; }
+        cb   => sub       { exit; },
     },
     {   name => [ 'connect', 'con' ],
         args => ['server'],
@@ -130,6 +130,80 @@ our $core_cmds = [
             my ($i, $pd, $opts, @args) = @_;
             $::srv{ $pd->{server} }->disconnect($args[0]);
           }
+    },
+    {   name => [ 'server', 'srv' ],
+        args => [],
+        cb   => sub {
+            my ($i, $pd, $opts, @args) = @_;
+            $i->write(join " ", keys %srv);
+        },
+        kids => [ {
+                name => [ 'create', 'new', 'add' ],
+                args => [ 'string', 'string?' ],
+                sopts => [ 'ip|server|addr|address=s', 'port=s', 'nick|nickname=s', 'user|username=s', 'pass|password=s', 'auth=s', 'authpw|nspw=s', 'real|gecos|realname=s', 'ssl!' ],
+                cb    => sub {
+                    my ($i, $pd, $opts, @args) = @_;
+                    my %o = (
+                        'port'   => '6667',
+                        'ssl'    => '0',
+                        'nick'   => 'MegaHAL',
+                        'user'   => 'megahal',
+                        'real'   => 'MegaHAL',
+                        'pass'   => '',
+                        'auth'   => 'nickserv',
+                        'authpw' => ''
+                    );
+                    $o{'name'} = shift @args;
+                    if ($srv{ $o{'name'} }) {
+                        die "Server ${o{name}} already exists!\n";
+                    }
+                    $o{$_} = $opts->{$_} foreach keys %$opts;
+                    if (!$o{'ip'}) {
+                        if ($args[0] =~ /^(?:(?<nick>[^@]+)@)?(?<addr>[0-9:a-zA-Z.]+?)(?::(?<port>\+?\d+))?$/) {
+                            $o{'ip'}   = $+{'addr'};
+                            $o{'port'} = $+{'port'} if $+{'port'};
+                            $o{'nick'} = $+{'nick'} if $+{'nick'};
+                            if ($args[1]) {
+                                $o{'port'} = $_[1];
+                            }
+                            if ($args[2]) {
+                                $o{'pass'} = $_[2];
+                            }
+                        } else {
+                            die "Failed to add server - no address provided!\n";
+                            return;
+                        }
+                    }
+                    if ($o{'port'} =~ /^\+/) {
+                        $o{'port'} = substr $o{'port'}, 1;
+                        $o{'ssl'} = 1;
+                    }
+                    $srv{ $o{'name'} } = new MegaHAL::Server(\%o);
+                    $i->write("Server ${o{name}} added successfully\n");
+                  }
+            }
+        ]
+    },
+    {   name => [ 'server', 'srv' ],
+        args => ['string'],
+        kids => [ {
+                name => [ 'set',    'edit' ],
+                args => [ 'string', 'string' ],
+                cb   => sub {
+                    my ($i, $pd, $opts, @args) = @_;
+                    my %keys = map { $_, 1 } qw(port ssl nick user real pass auth authpw reconnect ping ip oper extip);
+                    die "No such option: $args[1]!\n" unless $keys{ $args[1] };
+                    $srv{ $args[0] }->{ $args[1] } = $args[2];
+                    $i->write("[$args[0]] Set $args[1] to '$args[2]'");
+                  }
+            },
+            {   name => [ 'delete', 'del' ],
+                cb   => sub {
+                    my ($i, $pd, $opts, @args) = @_;
+                    delete $srv{ $args[0] };
+                  }
+            }
+        ]
     },
     {   name => [ 'eval', 'e' ],
         args => ['string+'],
@@ -151,11 +225,25 @@ our $core_cmds = [
             my ($iface, $pd, $opts, @args) = @_;
             $iface->write(MegaHAL::Shell::help(cmdtree(), @args));
           }
+    },
+    {    #XXX legacy plugin command hook
+        name => [ 'c',      'command' ],
+        args => [ 'server', '*' ],
+        cb   => sub {
+            my ($i, $pd, $opts, @args) = @_;
+            $srv{ $args[0] }->call_hook('consoleCommand', @args);
+            $srv{ $args[0] }->call_hook('iConsoleCommand', $i, @args);
+          }
     }
 ];
 
+sub cmdtree {
+    [ $core_cmds, map { $_->commands() } grep { ref $_ eq 'MegaHAL::Server' } values %srv ];
+}
+
 sub console {
     my ($line, $iface) = @_;
-    MegaHAL::Shell::parse($iface, $line, [ $core_cmds, map { $_->commands() } values %srv ], {});
+    print Dump cmdtree;
+    MegaHAL::Shell::parse($iface, $line, cmdtree(), {});
 }
 init();

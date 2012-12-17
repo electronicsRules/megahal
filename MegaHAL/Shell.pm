@@ -3,20 +3,30 @@ use Text::ParseWords;
 use MegaHAL::Shellquote;
 use Getopt::Long qw(GetOptionsFromArray);
 use Carp;
+use YAML::Any;
 use feature 'switch';
+
+our $DEBUG = 0;
+sub dbg ($) { print @_, "\n" if $DEBUG }
 
 sub parse {
     my ($iface, $str, $tree, $pd) = @_;
     croak "Specify interface as the first argument!\n" unless UNIVERSAL::isa($iface, MegaHAL::Interface);
     croak "Specify command tree as the third argument!\n" unless ref $tree eq 'ARRAY';
+    dbg 'parse "' . $str . '"';
     my $sq = new MegaHAL::Shellquote(sub { &parse($iface, $_[0], $tree, $pd) });
     my @args = $sq->split($str);
     Getopt::Long::Configure(qw(default require_order pass_through));
     my @matches;
     eval {
         if (ref $tree->[0] eq 'ARRAY') {
-            push @matches, match($iface, [ @{$_}[ 1 .. scalar(@{$_}) ] ], [], $pd || $_->[0] || {}, [], [], @args) foreach @{$tree};
+            my $n = 0;
+            foreach (@$tree) {
+                dbg 'mtch sbtr ' . $n++;
+                push @matches, match($iface, [ @{$_}[ 1 .. scalar(@{$_}) ] ], [], $pd || $_->[0] || {}, [], [], @args);
+            }
         } else {
+            dbg 'mtch glb';
             @matches = match($iface, $tree, [], $pd || {}, [], [], @args);
         }
     };
@@ -28,11 +38,18 @@ sub parse {
         $iface->write("\cC5No such command.");
         return 1;
     } else {
+        dbg 'mtchd';
         $iface->acan(
             $matches[0]->[1],
             sub {
                 if ($_[0]) {
-                    $matches[0]->[2]->($iface, splice(@{ $matches[0] }, 3));
+                    local $!, $@;
+                    eval { $matches[0]->[2]->($iface, splice(@{ $matches[0] }, 3)); };
+                    if ($@) {
+                        $iface->write("\cC5$@");
+                    } elsif ($!) {
+                        $iface->write("\cC5$!");
+                    }
                 } else {
                     $iface->write("\cC5Access denied.");
                 }
@@ -44,6 +61,7 @@ sub parse {
 
 sub match {
     my ($iface, $tree, $_stk, $_pd, $_targs, $_perms, @args) = @_;
+    dbg('mtch tree:' . Dump($tree) . ' stk:' . Dump($_stk) . ' pd:' . Dump($_pd) . ' targs:' . Dump($_targs) . ' perms:' . Dump($_perms) . ' args:' . Dump(\@args) . "\n----------------------------------------------");
     my @stk  = @$_stk;
     my $name = shift @args;
     my @matches;
@@ -149,6 +167,7 @@ sub match {
                 }
                 when ('*') {
                     push @targs, shift @args while @args;
+                    $nea = 0;
                 }
             }
             error($iface, [ @stk, $cname ], "Not enough arguments!") if $nea;
@@ -159,14 +178,14 @@ sub match {
             $iface->ecerr();
             next unless $ret;
         }
-        if ($i->{'sub'} and $args[0]) {
-            push @matches, match($iface, $i->{'sub'}, [ @stk, $cname ], \%pd, \@targs, \@perms, @args);
+        if ($i->{'kids'} and $args[0]) {
+            push @matches, match($iface, $i->{'kids'}, [ @stk, $cname ], {%pd}, [@targs], [@perms], @args);
         }
         if ($i->{'cb'}) {
             if (scalar(@args) > 0) {
                 error($iface, [ @stk, $cname ], "Too many arguments!");
             } else {
-                push @matches, [ [ @stk, $cname ], \@perms, $i->{'cb'}, \%pd, \%opts, @targs ];
+                push @matches, [ [ @stk, $cname ], [@perms], $i->{'cb'}, {%pd}, {%opts}, @targs ];
             }
         }
     }
@@ -184,15 +203,16 @@ sub help {
     my @help;
     foreach (@{$tree}) {
         push @help, sprintf "%-20s " . ('%-12s ' x scalar(@{ $_->{'args'} })) . " %s", $_->{'name'}->[0], @{ $_->{'args'} }, $_->{'desc'};
-        push @help, help($_->{'sub'}, splice(@args, 1)) if $_->{'sub'};
+        push @help, help($_->{'kids'}, splice(@args, 1)) if $_->{'kids'};
     }
     return join "\n", @help;
 }
 
 sub error {
     my ($iface, $stk, $text) = @_;
+    $text = '[' . $stk->[-1] . '] ' . $text;
     $iface->write("\cC5" . $text);
-    die $text;
+    #die $text;
 }
 1;
 
@@ -211,7 +231,7 @@ commands as hash structures:
     {
         name: ['server','srv'],
         args: ['server'],
-        sub: [
+        kids: [
             {# Permissions: *.*, core@*.server.*, core@*.server.set, core@highway-all.*, core@*.*, *@highway-all.*, *@highway-all.server.*, *@highway-all.server.set
                 name: ['set'],
                 args: ['string','string'],
@@ -226,7 +246,7 @@ commands as hash structures:
     }
     {
         name: ['server','srv'], #also allows for plugins to extend existing top-level commands. not sure how to output help from this.
-        sub: [
+        kids: [
             {# Permissions: *.*, core@*.server.*, core@*.server.add - since 'server' is not in typed-args, @<server> permissions are not an option.
                 name: ['add','new'],
                 args: ['string']

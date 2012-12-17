@@ -52,7 +52,34 @@ sub reg_cmd {
 
 sub commands {
     my ($self) = @_;
-    return values %{ $self->{'commands'} };
+    return ({
+            name => [ 'plugin', 'pl', 'mod', 'm' ],
+            args => ['string'],
+            source => { 'server' => $self->{'serv'}->name() },
+            kids   => [ {
+                    name => [ 'load', 'l' ],
+                    cb   => sub {
+                        my ($i, $pd, $opts, @args) = @_;
+                        $self->load_plugin($args[0]);
+                      }
+                },
+                {   name => [ 'unload', 'u' ],
+                    cb   => sub {
+                        my ($i, $pd, $opts, @args) = @_;
+                        $self->unload_plugin($args[0]);
+                      }
+                },
+                {   name => [ 'reload', 'r' ],
+                    cb   => sub {
+                        my ($i, $pd, $opts, @args) = @_;
+                        $self->unload_plugin($args[0]);
+                        $self->load_plugin($args[0]);
+                      }
+                }
+            ]
+        },
+        values %{ $self->{'commands'} }
+    );
 }
 
 sub error_cb {
@@ -259,5 +286,10 @@ sub load {
         }
     }
     return $ret ? $ret : 1;
+}
+
+sub DESTROY {
+    my ($self) = @_;
+    delete $self->{'serv'};
 }
 1;

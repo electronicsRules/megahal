@@ -55,6 +55,21 @@ foreach (qw(send_raw send_msg send_dcc_chat set_nick_change_cb nick is_my_nick c
     die $@ if $@;
 }
 
+sub commands {
+    my ($self) = @_;
+    return (({  name => [ 'raw', 'r', 'quote' ],
+                args => ['*'],
+                source => { 'server' => $self->name() },
+                cb     => sub {
+                    my ($i, $pd, $opts, @args) = @_;
+                    $self->send_srv(@args);
+                  }
+            }
+        ),
+        $self->{'plugins'}->commands()
+    );
+}
+
 sub extip {
     my ($self) = @_;
     return $self->{'extip'} || $main::extip;

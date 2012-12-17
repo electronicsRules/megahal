@@ -21,36 +21,32 @@ sub new {
             }
         }
     );
-    $serv->reg_cb(
-        'iConsoleCommand' => sub {
-            my ($this, $i, $cmd, @args) = @_;
-            my $nick    = $i->source();
-            my $ownnick = $serv->nick();
-            my $tgt     = shift @args;
-            my $msg     = join ' ', @args;
-            if ($cmd eq 'msg' || $cmd eq 'say') {
-                $serv->send_long_message('utf8', 0, PRIVMSG => $_, "\cC3$nick\cO -> $tgt $msg") foreach @{ $self->{'chans'} };
-                $serv->msg($tgt, $msg);
-            } elsif ($cmd eq 'act') {
-                $serv->send_long_message('utf8', 0, PRIVMSG => $_, "\cC3$nick\cO -> $tgt * $ownnick $msg") foreach @{ $self->{'chans'} };
-                $serv->msg($tgt, "\cAACTION $msg\cA");
-            } elsif ($cmd eq 'help') {
-                my $sn = $serv->name();
-                $i->write(
-                    "MegaHAL help (temporary command from PMSyndicate.pm):
-Syndicated commands:
-c $sn msg #channel message
-c $sn act #channel message
-Direct commands:
-raw $sn notice #channel message
-raw $sn mode #channel +modes arguments here as normal
-Quoting rules:
-To send apostrophes, wrap them in \"double quotes\"
-To send double quotes, wrap them in \'single quotes\'
-"
-                );
+    $serv->reg_cmd([ {
+                name => [ 'msg',    'say', 'privmsg' ],
+                args => [ 'target', 'string+' ],
+                cb   => sub {
+                    my ($i, $pd, $opts, @args) = @_;
+                    my $nick    = $i->source();
+                    my $ownnick = $serv->nick();
+                    my $tgt     = shift @args;
+                    my $msg     = join ' ', @args;
+                    $serv->send_long_message('utf8', 0, PRIVMSG => $_, "\cC3$nick\cO -> $tgt $msg") foreach @{ $self->{'chans'} };
+                    $serv->msg($tgt, $msg);
+                  }
+            },
+            {   name => [ 'act',    'action', 'me' ],
+                args => [ 'target', 'string+' ],
+                cb   => sub {
+                    my ($i, $pd, $opts, @args) = @_;
+                    my $nick    = $i->source();
+                    my $ownnick = $serv->nick();
+                    my $tgt     = shift @args;
+                    my $msg     = join ' ', @args;
+                    $serv->send_long_message('utf8', 0, PRIVMSG => $_, "\cC3$nick\cO -> $tgt * $ownnick $msg") foreach @{ $self->{'chans'} };
+                    $serv->msg($tgt, "\cAACTION $msg\cA");
+                  }
             }
-        }
+        ]
     );
     return bless $self, $class;
 }
