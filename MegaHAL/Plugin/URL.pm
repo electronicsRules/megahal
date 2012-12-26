@@ -195,7 +195,7 @@ sub new {
                                         if (length($sdesc) >= ($mlen - 5) - length($oa)) {
                                             $sdesc = substr($sdesc, 0, ($mlen - 5) - length($oa)) . '[...]';
                                         }
-                                        $oa .= $sdesc;
+                                        $oa .= $sdesc unless $self->{'chans'}->{$chan}->{'youtube'}=~/-desc/i;
                                         $serv->msg($chan, $oa);
                                         return 1;
                                     }
