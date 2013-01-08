@@ -213,6 +213,7 @@ sub connect {
             if (uc($tag) eq 'ACTION' && $type eq 'PRIVMSG' and not $self->{'con'}->is_channel_name($target)) {
                 print "[$$self{name}] $src -> $target [ACTION]: $msg\n";
             }
+            #print "CTCP: [src=$src,target=$target,tag=$tag,msg=$msg,type=$type]\n";
             if (uc($tag) eq 'ACTION' && $type eq 'PRIVMSG' and $self->{'con'}->is_channel_name($target)) {
                 $self->call_hook('publicaction', $src => $target, $msg);
             }

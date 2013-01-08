@@ -14,7 +14,8 @@ sub new {
     my $self = { 'chans' => {} };
     bless $self, $class;
     my $cb = sub {
-        #print "1 $chan $message\n";
+        my ($_plugins, $nick, $chan, $message) = @_;
+        #print "1 $nick -> $chan $message\n";
         if ($self->{'chans'}->{$chan}) {
             #print "2 $chan $message\n";
             my @urls = ($message =~ m#https?://([^ ]+)#g);
@@ -214,7 +215,7 @@ sub new {
             my $message = $ircmsg->{'params'}->[1];
             my $mstr    = join '', keys %{$modes};
             return if $command ne 'PRIVMSG' or $this->is_my_nick($nick);
-            $cb->($nick, $channel, $message);
+            $cb->($self, $nick, $chan, $message);
         }
     );
     $serv->reg_cb('publicaction' => $cb);

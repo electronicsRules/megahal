@@ -67,11 +67,27 @@ sub cache_http {
     EV::run EV::RUN_NOWAIT;
     if (defined $val) {
         print "Cache hit $key!\n";
-        $sub->($val);
+        local $@;
+        local $!;
+        eval { $sub->($val); };
+        if ($@) {
+            warn "Error in cache callback: $@\n";
+        }
+        if ($!) {
+            warn "Error in cache callback: $!\n";
+        }
     } else {
         if ((AnyEvent->now() - $lreq) >= $dreqi) {
             AnyEvent::HTTP::http_get $url, sub {
-                if ($sub->($_[0])) {
+                my $r;
+                eval { $r = $sub->($_[0]) };
+                if ($@) {
+                    warn "Error in cache callback: $@\n";
+                }
+                if ($!) {
+                    warn "Error in cache callback: $!\n";
+                }
+                if ($r) {
                     EV::run EV::RUN_NOWAIT;
                     $cache->set('http:' . $key, $_[0], $expire || 60 * 60 * 15);
                 }
