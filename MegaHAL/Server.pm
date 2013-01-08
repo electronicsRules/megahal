@@ -24,7 +24,7 @@ sub new {
     };
     bless $self, $class;
     $self->{'plugins'} = MegaHAL::Plugins->new($self);
-    $self->{'plugins'}->new_hook($_) foreach qw(auth_ok auth_fail connecting connect disconnect reconnect pingTimeout consoleCommand iConsoleCommand stdout stderr tick);
+    $self->{'plugins'}->new_hook($_) foreach qw(auth_ok auth_fail connecting connect disconnect reconnect pingTimeout consoleCommand iConsoleCommand stdout stderr tick publicaction);
     my %def = (
         'port'      => '6667',
         'ssl'       => '0',
@@ -210,8 +210,11 @@ sub connect {
     $self->{'con'}->reg_cb(
         ctcp => sub {
             my ($this, $src, $target, $tag, $msg, $type) = @_;
-            if ($tag eq 'ACTION' && $type eq 'PRIVMSG' and not $self->{'con'}->is_channel_name($target)) {
+            if (uc($tag) eq 'ACTION' && $type eq 'PRIVMSG' and not $self->{'con'}->is_channel_name($target)) {
                 print "[$$self{name}] $src -> $target [ACTION]: $msg\n";
+            }
+            if (uc($tag) eq 'ACTION' && $type eq 'PRIVMSG' and $self->{'con'}->is_channel_name($target)) {
+                $self->call_hook('publicaction', $src => $target, $msg);
             }
         }
     );
