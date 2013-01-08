@@ -12,6 +12,10 @@ $host =~ /^([^\@]+)\@(.*)(?::(\d+))?$/;
 ($name, $host, $port) = ($1, $2, $3);
 $port = 9000 if not $port;
 die if not $host;
+if ($ENV{TERM} eq 'screen' || $ENV{TERM} eq 'tmux') {
+    $0 = "tlstelnet";
+    print "\e]0${name}\@${host}" . ($port != 9000 ? ':' . $port : '') . "\7";
+}
 our $old_stdout;
 open($old_stdout, '>&STDOUT') or die "Can't dup STDOUT!\n";
 our $rl;
