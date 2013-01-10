@@ -5,11 +5,12 @@ use Term::ANSIColor;
 sub _write {
     my $self = shift;
     chomp $_[0];
-    print $_[0], color('reset');
+    print ::CONOUT $_[0], color('reset');
 }
 sub type   {"Console"}
 sub source {"Console"}
 sub atype  {'always'}
+sub ansicolorok {1}
 
 sub colour {
     (   "\cB" => color('bold'),

@@ -21,8 +21,9 @@ open($old_stdout, '>&STDOUT') or die "Can't dup STDOUT!\n";
 my $c = AnyEvent->condvar;
 our %srv;
 our $cif = MegaHAL::Interface::Console->new();
+our $rl;
 if (1 || !defined(&DB::DB)) {
-    our $rl = AnyEvent::ReadLine::Gnu->new(
+    $rl = AnyEvent::ReadLine::Gnu->new(
         prompt  => '> ',
         on_line => sub {
             console($_[0], $cif);
@@ -35,7 +36,8 @@ if (1 || !defined(&DB::DB)) {
     my $t;
     $t = AnyEvent->timer(after => 1, interval => 1, cb => sub { $t; &dbghook });
 }
-
+#open(CONOUT, '>&', $old_stdout) or die "Can't dup STDOUT for CONOUT!\n";
+tie(*CONOUT,'MegaHAL::Filehandle',$old_stdout,$rl,sub {});
 sub dbghook {
     print '';
 }

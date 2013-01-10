@@ -22,7 +22,7 @@ sub new {
 sub write {
     my $self = shift;
     my $str = join ' ', @_;
-    $str = colorstrip($str);    #Get rid of existing Term::ANSIColor codes, because Shit Happens(tm)
+    $str = colorstrip($str) unless $self->ansicolorok();    #Get rid of existing Term::ANSIColor codes, because Shit Happens(tm)
     my %map = $self->colour();
     foreach (grep { $_ ne "\cC" } keys %map) {
         $str =~ s/($_)/ref $map{$_} eq 'CODE' ? $map{$_}->($1) : $map{$_}/eg;
@@ -34,6 +34,7 @@ sub write {
     return print "[$$self{source}] $str\n";
 }
 
+sub ansicolorok {0}
 sub type   {"UNKNOWN"}
 sub source { $_[0]->{'source'} || "UNKNOWN" }
 sub atype  {'user'}
