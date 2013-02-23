@@ -182,7 +182,7 @@ sub new {
                                     my $cban   = join ",", map { $_->{value} } grep { $_->{type} eq 'country' } (ref $e->{'media:group'}->{'media:restriction'} eq 'ARRAY' ? @{ $e->{'media:group'}->{'media:restriction'} } : $e->{'media:group'}->{'media:restriction'});
                                     my ($B, $C, $U, $O, $V) = ("\cB", "\cC", "\c_", "\cO", "\cV");
                                     my $sdesc = shorten($desc);
-                                    my $oa    = sprintf "%s${C}2${B}%s${O} by ${C}3${B}%s${O} [%s] [%s] [${C}3+%s${C}4-%s${O},%sc,%sv,%sf]%s ", $prefix, $title, $author, $duration, $cat, $upv, $downv, $ncomm, $views, $favs, ($cban ? " ${C}5$cban${O} " : '');
+                                    my $oa    = sprintf "%s${C}2${B}%s${O} by ${C}3${B}%s${O} [%s] [%s] [${C}3+%s${C}4-%s${O},%sc,%sv]%s ", $prefix, $title, $author, $duration, $cat, $upv, $downv, $ncomm, $views, ($cban ? " ${C}5$cban${O} " : '');
                                     my $mlen  = 841 - 15;
                                     if (length($sdesc) >= ($mlen - 5) - length($oa)) {
                                         $sdesc = substr($sdesc, 0, ($mlen - 5) - length($oa)) . '[...]';
@@ -274,9 +274,10 @@ sub shorten {
 sub remove_bbcode {
     my ($str) = @_;
     $str =~ s#\[url=[^\]]+\](.*?)\[/url\]#$1#g;
-    $str =~ s#\[/?[biu]\]##g;
+    $str =~ s#\[/?[bius]\]##g;
     $str =~ s#\[color=[^\]]+\]##g;
     $str =~ s#\[/color\]##g;
+    $str =~ s#\[spoiler\].*?\[/spoiler\]##g;
     $str =~ s#\[quote\](.*?)\[/quote\]#$1#g;
     return $str;
 }
