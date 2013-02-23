@@ -58,8 +58,8 @@ sub new {
                             );
                         }
                     }
-                    when (m`^(?:[^.]+\.)?fimfiction.net\/story\/(\d+)$`) {
-                        if ($self->{'chans'}->{$chan}->{'fimfic'}) {
+                    when (m`^(?:[^.]+\.)?fimfiction.net\/story\/(\d+)`) {
+                        if ($self->{'chans'}->{$chan}->{'fimfic'} and $_!~/#comment\/\d+$/) {
                             cache_http(
                                 'http://fimfiction.net/api/story.php?story=' . $1,
                                 "fimfic:$1",
