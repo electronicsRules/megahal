@@ -332,7 +332,7 @@ sub connect {
                 delete $self->{'ctimer'}->{$chan};
                 foreach (keys %{ $self->{'session'} }) {
                     next unless $self->{'session'}->{$_}->{'status'} eq 'waiting_chanauth' or $self->{'session'}->{$_}->{'status'} eq 'chanauth';
-                    my $n = common_chans($_);
+                    my $n = $self->common_chans($_);
                     if ($n > 0) {
                         $self->{'session'}->{$_}->{'channels'} = $n;
                     } else {
