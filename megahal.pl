@@ -37,7 +37,8 @@ if (1 || !defined(&DB::DB)) {
     $t = AnyEvent->timer(after => 1, interval => 1, cb => sub { $t; &dbghook });
 }
 #open(CONOUT, '>&', $old_stdout) or die "Can't dup STDOUT for CONOUT!\n";
-tie(*CONOUT,'MegaHAL::Filehandle',$old_stdout,$rl,sub {});
+tie(*CONOUT, 'MegaHAL::Filehandle', $old_stdout, $rl, sub { });
+
 sub dbghook {
     print '';
 }
@@ -203,6 +204,35 @@ our $default = \('_default');
                         $i->write("[$s] Unloaded $p successfully\n");
                     } else {
                         $i->write("[$s] \cC4Error while unloading $p: " . ($r->[0]));
+                    }
+                  }
+            ],
+            qr/^r(?:eload)?$/ => [
+                '_plugin',
+                '',
+                sub {
+                    my ($i, $s, $p) = $_;
+                    if (!$srv{$s}->is_loaded($p)) {
+                        $i->write("\cC4$p is not loaded on $s!\n");
+                        return;
+                    }
+                    $i->write("[$s] Unloading $p...\n");
+                    my $r = $srv{$s}->unload_plugin($p);
+                    if ($r == 0) {
+                        $i->write("[$s] Unloaded $p successfully\n");
+                    } else {
+                        $i->write("[$s] \cC4Error while unloading $p: " . ($r->[0]));
+                    }
+                    if ($srv{$s}->is_loaded($p)) {
+                        $i->write("\cC4$p is already loaded on $s!\n");
+                        return;
+                    }
+                    $i->write("[$s] Loading $p...\n");
+                    my $r = $srv{$s}->load_plugin($p);
+                    if ($r == 0) {
+                        $i->write("[$s] Loaded $p successfully\n");
+                    } else {
+                        $i->write("[$s] \cC4Error while loading $p: " . ($r->[0]));
                     }
                   }
             ],
