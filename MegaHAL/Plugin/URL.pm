@@ -27,7 +27,7 @@ sub new {
                 my $url = $_;
                 #print "3 $chan $url\n";
                 given ($url) {
-                    when (m`^(?:[a-zA-Z0-9-_]+\.deviantart\.com/(?:art/[^ ]+)|(?:[^# ]+#/d[^ ]+))|(?:fav\.me/[^ ]+)$`) {
+                    when (m`^(?:(?:[a-zA-Z0-9-_]+\.)?deviantart\.com/(?:art/[^ ]+)|(?:[^# ]+#/d[^ ]+))|(?:fav\.me/[^ ]+)$`) {
                         if ($self->{'chans'}->{$chan}->{'deviantart'}) {
                             cache_http(
                                 'http://backend.deviantart.com/oembed?url=' . $url,
@@ -58,7 +58,7 @@ sub new {
                             );
                         }
                     }
-                    when (m`^(?:www\.)?fimfiction.net\/story\/(\d+)`) {
+                    when (m`^(?:[^.]+\.)?fimfiction.net\/story\/(\d+)$`) {
                         if ($self->{'chans'}->{$chan}->{'fimfic'}) {
                             cache_http(
                                 'http://fimfiction.net/api/story.php?story=' . $1,
@@ -120,7 +120,7 @@ sub new {
                             );
                         }
                     }
-                    when (m`^derpiboo(?:(?:\.ru)|(?:ru\.org))/(\d+)(?:\?.*)?$`) {
+                    when (m`^(?:www\.)?derpiboo(?:(?:\.ru)|(?:ru\.org))/(\d+)(?:\?.*)?$`) {
                         if ($self->{'chans'}->{$chan}->{'derpibooru'} && $1) {
                             cache_http(
                                 'http://derpiboo.ru/' . $1 . '.json',
