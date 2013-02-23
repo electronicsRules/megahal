@@ -211,7 +211,7 @@ our $default = \('_default');
                 '_plugin',
                 '',
                 sub {
-                    my ($i, $s, $p) = $_;
+                    my ($i, $s, $p) = @_;
                     if (!$srv{$s}->is_loaded($p)) {
                         $i->write("\cC4$p is not loaded on $s!\n");
                         return;
