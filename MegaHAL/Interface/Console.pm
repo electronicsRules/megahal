@@ -7,9 +7,9 @@ sub _write {
     chomp $_[0];
     print ::CONOUT $_[0], color('reset');
 }
-sub type   {"Console"}
-sub source {"Console"}
-sub atype  {'always'}
+sub type        {"Console"}
+sub source      {"Console"}
+sub atype       {'always'}
 sub ansicolorok {1}
 
 sub colour {

@@ -35,9 +35,9 @@ sub write {
 }
 
 sub ansicolorok {0}
-sub type   {"UNKNOWN"}
-sub source { $_[0]->{'source'} || "UNKNOWN" }
-sub atype  {'user'}
+sub type        {"UNKNOWN"}
+sub source      { $_[0]->{'source'} || "UNKNOWN" }
+sub atype       {'user'}
 
 sub acan {
     my ($self, $plugin, $node, $channel, $cb) = @_;
