@@ -19,7 +19,7 @@ sub new {
         if ($self->{'chans'}->{$chan}) {
             #print "2 $chan $message\n";
             my @urls = ($message =~ m#https?://([^ ]+)#g);
-            my $n = 0;
+            my $n    = 0;
             $n = 1 if scalar(@urls) > 1;
             foreach (@urls) {
                 my $prefix = "#$n " if $n > 0;
@@ -59,7 +59,7 @@ sub new {
                         }
                     }
                     when (m`^(?:[^.]+\.)?fimfiction.net\/story\/(\d+)`) {
-                        if ($self->{'chans'}->{$chan}->{'fimfic'} and $_!~/#comment\/\d+$/) {
+                        if ($self->{'chans'}->{$chan}->{'fimfic'} and $_ !~ /#comment\/\d+$/) {
                             cache_http(
                                 'http://fimfiction.net/api/story.php?story=' . $1,
                                 "fimfic:$1",

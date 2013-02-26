@@ -28,8 +28,8 @@ sub write {
         $str =~ s/($_)/ref $map{$_} eq 'CODE' ? $map{$_}->($1) : $map{$_}/eg;
     }
     $str =~ s/(\cC\d?\d?(?:,\d\d?)?)/ref $map{"\cC"} eq 'CODE' ? $map{"\cC"}->($1) : $map{"\cC"}/eg if defined $map{"\cC"};
-    return $self->_write($str) if $self->can('_write');
-    return $self->{'code'}->($str) if $self->{'code'};
+    return $self->_write($str)                                                                      if $self->can('_write');
+    return $self->{'code'}->($str)                                                                  if $self->{'code'};
     return print $self->{'fh'}, $str if $self->{'fh'};
     return print "[$$self{source}] $str\n";
 }
