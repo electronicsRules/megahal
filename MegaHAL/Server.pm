@@ -133,7 +133,7 @@ sub reg_cb {
 sub connect {
     my ($self) = @_;
     my $ret;
-    $self->{'con'} = AnyEvent::IRC::Client->new(send_initial_whois => 1);
+    $self->{'con'} = $self->{'con'} || AnyEvent::IRC::Client->new(send_initial_whois => 1);
     if ($self->{'ssl'}) {
         $self->{'con'}->enable_ssl();
     }
