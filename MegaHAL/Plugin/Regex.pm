@@ -47,7 +47,7 @@ sub new {
                     return;
                 }
             }
-            $self->{'lastmsg'}->{$chan} = [ $nick, $ircmsg ];
+            $self->{'lastmsg'}->{$chan} = [ $nick, $message ];
         }
     );
     return bless $self, $class;
