@@ -54,7 +54,7 @@ sub new {
     $serv->reg_cb(
         'publicaction' => sub {
             my ($this, $nick, $chan, $message) = @_;
-            if (!$this->is_my_nick($nick) and $self->{'chans'}->{$chan}) {
+            if (!$self->is_my_nick($nick) and $self->{'chans'}->{$chan}) {
                 $self->{'lastmsg'}->{$chan} = [ $nick, $message, 1 ];
             }
         }
