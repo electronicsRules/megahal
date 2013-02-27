@@ -16,7 +16,7 @@ sub new {
             my $mstr    = join '', keys %{$modes};
             return if $command ne 'PRIVMSG' or $this->is_my_nick($nick);
             if ($self->{'chans'}->{$chan}) {
-                if ($message =~ /^ps\/.*\/.*\/[ig]*$/) {
+                if ($message =~ /^ps\/.*\/.*\/[ige]*$/) {
                     my ($B, $C, $U, $O, $V) = ("\cB", "\cC", "\c_", "\cO", "\cV");
                     $message =~ s/\\\\/\000/g;
                     $message =~ s/\\\//\001/g;
