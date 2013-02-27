@@ -18,12 +18,12 @@ sub new {
             if ($self->{'chans'}->{$chan}) {
                 if ($message =~ /^ps\/.*\/.*\/[ige]*$/) {
                     my ($B, $C, $U, $O, $V) = ("\cB", "\cC", "\c_", "\cO", "\cV");
-                    $message =~ s/\\\\/\000/g;
-                    $message =~ s/\\\//\001/g;
-                    $message =~ /^p(s\/.*\/.*\/[ig]*)$/;
+                    $message =~ s/\\\\/\x{FFFE}/g;
+                    $message =~ s/\\\//\x{FFFF}/g;
+                    $message =~ /^p(s\/.*\/.*\/[ige]*)$/;
                     my $re = $1;
-                    $re =~ s/\000/\\\\/g;
-                    $re =~ s/\001/\\\//g;
+                    $re =~ s/\x{FFFE}/\\\\/g;
+                    $re =~ s/\x{FFFF}/\\\//g;
                     my $s = new Safe;
                     $s->permit(qw(:base_core));
                     if (not defined $self->{'lastmsg'}->{$chan}) {
