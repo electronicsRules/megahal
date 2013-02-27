@@ -1,5 +1,6 @@
 package MegaHAL::Plugin::Regex;
 use Safe;
+use utf8;
 use feature 'switch';
 
 sub new {
@@ -15,11 +16,11 @@ sub new {
             my $mstr    = join '', keys %{$modes};
             return if $command ne 'PRIVMSG' or $this->is_my_nick($nick);
             if ($self->{'chans'}->{$chan}) {
-                if ($message =~ /^ps\/.*\/.*\/[i]*$/) {
+                if ($message =~ /^ps\/.*\/.*\/[ig]*$/) {
                     my ($B, $C, $U, $O, $V) = ("\cB", "\cC", "\c_", "\cO", "\cV");
                     $message =~ s/\\\\/\000/g;
                     $message =~ s/\\\//\001/g;
-                    $message =~ /^p(s\/.*\/.*\/[i]*)$/;
+                    $message =~ /^p(s\/.*\/.*\/[ig]*)$/;
                     my $re = $1;
                     $re =~ s/\000/\\\\/g;
                     $re =~ s/\001/\\\//g;
@@ -40,14 +41,22 @@ sub new {
                     if ($@) {
                         $serv->msg($chan, "Error: ${C}5" . $@);
                     } elsif (${ $s->varglob('mtch') }) {
-                        $serv->msg($chan, '<' . $self->{'lastmsg'}->{$chan}->[0] . '> ' . $ret);
+                        $serv->msg($chan, sprintf(($self->{'lastmsg'}->{$chan}->[2] ? '* %s %s' : '<%s> %s'), $self->{'lastmsg'}->{$chan}->[0], $ret));
                     } else {
                         $serv->msg($chan, $nick . ': No match.');
                     }
                     return;
                 }
+                $self->{'lastmsg'}->{$chan} = [ $nick, $message ];
             }
-            $self->{'lastmsg'}->{$chan} = [ $nick, $message ];
+        }
+    );
+    $serv->reg_cb(
+        'publicaction' => sub {
+            my ($this, $nick, $chan, $message) = @_;
+            if (!$this->is_my_nick($nick) and $self->{'chans'}->{$chan}) {
+                $self->{'lastmsg'}->{$chan} = [ $nick, $message, 1 ];
+            }
         }
     );
     return bless $self, $class;
