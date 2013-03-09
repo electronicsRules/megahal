@@ -11,7 +11,7 @@ sub new {
             my ($this,  $nick, $ircmsg) = @_;
             my ($modes, $nick, $ident)  = $this->split_nick_mode($ircmsg->{'prefix'});
             my $command = $ircmsg->{'command'};
-            my $chan    = $ircmsg->{'params'}->[0];
+            my $chan    = lc($ircmsg->{'params'}->[0]);
             my $message = $ircmsg->{'params'}->[1];
             my $mstr    = join '', keys %{$modes};
             return if $command ne 'PRIVMSG' or $this->is_my_nick($nick);
@@ -54,6 +54,7 @@ sub new {
     $serv->reg_cb(
         'publicaction' => sub {
             my ($this, $nick, $chan, $message) = @_;
+            $chan=lc($chan);
             if (!$serv->is_my_nick($nick) and $self->{'chans'}->{$chan}) {
                 $self->{'lastmsg'}->{$chan} = [ $nick, $message, 1 ];
             }
