@@ -12,7 +12,7 @@ sub new {
             interval => 1,
             cb       => sub {
                 foreach (keys %{ $self->{'msgs'} }) {
-                    if ($_ > AnyEvent->now) {
+                    if ($_ <= AnyEvent->now) {
                         my $msg = $self->{'msgs'}->{$_};
                         delete $self->{'msgs'}->{$_};
                         $serv->msg($msg->{chan}, sprintf("%s -> %s: %s", $msg->{source}, $msg->{target}, $msg->{msg}));
