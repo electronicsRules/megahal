@@ -47,7 +47,11 @@ sub new {
                                 foreach (keys %suf) {
                                     $args[0] =~ s/([0-9.]+) ?($_)s?/$after+=$1*$suf{$2};''/eg;
                                 }
+                            } else {
+                                $serv->msg($chan, "Unknown time format!");
+                                return;
                             }
+                            $serv->msg($chan, "I'll remind them after $after seconds.");
                             $self->{'msgs'}->{ AnyEvent->now + $after } = {
                                 chan   => $chan,
                                 target => $args[1] || $nick,
@@ -60,6 +64,7 @@ sub new {
             }
         }
     );
+    return bless $self, $class;
 }
 
 sub load {
