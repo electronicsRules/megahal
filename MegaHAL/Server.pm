@@ -23,8 +23,8 @@ sub new {
       ##'scap' => {}
     };
     bless $self, $class;
-    $self->{'plugins'} = MegaHAL::Plugins->new($self);
-    $self->{'plugins'}->new_hook($_) foreach qw(auth_ok auth_fail connecting connect disconnect reconnect pingTimeout consoleCommand iConsoleCommand stdout stderr tick publicaction);
+    #$self->{'plugins'} = MegaHAL::Plugins->new($self);
+    #$self->{'plugins'}->new_hook($_) foreach qw(auth_ok auth_fail connecting connect disconnect reconnect pingTimeout consoleCommand iConsoleCommand stdout stderr tick publicaction);
     my %def = (
         'port'      => '6667',
         'ssl'       => '0',
@@ -133,7 +133,9 @@ sub reg_cb {
 sub connect {
     my ($self) = @_;
     my $ret;
-    $self->{'con'} = $self->{'con'} || AnyEvent::IRC::Client->new(send_initial_whois => 1);
+    $self->{'con'} = AnyEvent::IRC::Client->new(send_initial_whois => 1);
+    $self->{'plugins'} = MegaHAL::Plugins->new($self);
+    $self->{'plugins'}->new_hook($_) foreach qw(auth_ok auth_fail connecting connect disconnect reconnect pingTimeout consoleCommand iConsoleCommand stdout stderr tick publicaction);
     if ($self->{'ssl'}) {
         $self->{'con'}->enable_ssl();
     }

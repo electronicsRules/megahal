@@ -6,21 +6,19 @@ sub new {
     my $self;
     $self = {
         'chans' => {},
-        'msgs'  => {},
-        'timer' => AnyEvent->timer(
-            after    => 1,
-            interval => 1,
-            cb       => sub {
-                foreach (keys %{ $self->{'msgs'} }) {
-                    if ($_ <= AnyEvent->now) {
-                        my $msg = $self->{'msgs'}->{$_};
-                        delete $self->{'msgs'}->{$_};
-                        $serv->msg($msg->{chan}, sprintf("%s -> %s: %s", $msg->{source}, $msg->{target}, $msg->{msg}));
-                    }
+        'msgs'  => {}
+    };
+    $serv->reg_cb(
+        tick => sub {
+            foreach (keys %{ $self->{'msgs'} }) {
+                if ($_ <= AnyEvent->now) {
+                    my $msg = $self->{'msgs'}->{$_};
+                    delete $self->{'msgs'}->{$_};
+                    $serv->msg($msg->{chan}, sprintf("%s -> %s: %s", $msg->{source}, $msg->{target}, $msg->{msg}));
                 }
             }
-        )
-    };
+        }
+    );
     $serv->reg_cb(
         publicmsg => sub {
             my ($this,  $nick, $ircmsg) = @_;
@@ -56,7 +54,7 @@ sub new {
                                 chan   => $chan,
                                 target => $args[1] || $nick,
                                 source => $nick,
-                                msg    => $args[2] || sprintf("%s was looking for you some time ago.", $nick)
+                                msg    => $args[2] || "I was looking for you some time ago."
                             };
                         }
                     }
