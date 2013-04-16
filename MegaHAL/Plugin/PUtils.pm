@@ -10,7 +10,7 @@ sub new {
             my ($this, $iface, $cmd, @args) = @_;
             if ($cmd =~ /^pu(?:til)?s?$/i) {
                 if (!$serv->is_loaded($args[0])) {
-                    $iface->write("\C4$args[0] is not the name of a loaded plugin!");
+                    $iface->write("\cC4$args[0] is not the name of a loaded plugin!");
                     return;
                 }
                 given ($args[1]) {
@@ -32,11 +32,11 @@ HELP
                                 $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'chans'}->{ $args[2] } = $args[3] || 1;
                                 $iface->write("Added $args[0] [HASH] to channel $args[2]" . ($args[3] ? ' with argument "' . $args[3] . '"' : '') . " successfully.");
                             } else {
-                                $iface->write("\C4$args[0] does not have a supported chans structure!");
+                                $iface->write("\cC4$args[0] does not have a supported chans structure!");
                                 return;
                             }
                         } else {
-                            $iface->write("\C4$args[0] does not have a chans structure!");
+                            $iface->write("\cC4$args[0] does not have a chans structure!");
                         }
                     }
                     when ([ 'remove', 'rem' ]) {
@@ -52,26 +52,26 @@ HELP
                                 delete $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'chans'}->{ $args[2] };
                                 $iface->write("Removed $args[0] [HASH] from channel $args[2] successfully.");
                             } else {
-                                $iface->write("\C4$args[0] does not have a supported chans structure!");
+                                $iface->write("\cC4$args[0] does not have a supported chans structure!");
                                 return;
                             }
                         } else {
-                            $iface->write("\C4$args[0] does not have a chans structure!");
+                            $iface->write("\cC4$args[0] does not have a chans structure!");
                         }
                     }
                     when ('set') {
                         if (exists $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'chans'}) {
                             if (ref $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'chans'} eq 'ARRAY') {
-                                $iface->write("\C4Can't set an ARRAY chans struct!");
+                                $iface->write("\cC4Can't set an ARRAY chans struct!");
                             } elsif (ref $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'chans'} eq 'HASH') {
                                 $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'chans'}->{ $args[2] } = $args[3] || 1;
                                 $iface->write("Set $args[0] [HASH] channel $args[2] argument to \"" . ($args[3] || 1) . "\" successfully");
                             } else {
-                                $iface->write("\C4$args[0] does not have a supported chans structure!");
+                                $iface->write("\cC4$args[0] does not have a supported chans structure!");
                                 return;
                             }
                         } else {
-                            $iface->write("\C4$args[0] does not have a chans structure!");
+                            $iface->write("\cC4$args[0] does not have a chans structure!");
                         }
                     }
                     when ('+b') {
@@ -80,13 +80,13 @@ HELP
                                 push @{ $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'bl'} }, $args[2];
                                 $iface->write("Blacklisted $args[2] from plugin $args[0] [ARRAY] successfully.");
                             } elsif (ref $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'bl'} eq 'HASH') {
-                                $iface->write("\C4No HASH blacklist support yet!");
+                                $iface->write("\cC4No HASH blacklist support yet!");
                             } else {
-                                $iface->write("\C4$args[0] does not have a supported bl structure!");
+                                $iface->write("\cC4$args[0] does not have a supported bl structure!");
                                 return;
                             }
                         } else {
-                            $iface->write("\C4$args[0] does not have a bl structure!");
+                            $iface->write("\cC4$args[0] does not have a bl structure!");
                         }
                     }
                     when ('-b') {
@@ -99,13 +99,13 @@ HELP
                                     }
                                 }
                             } elsif (ref $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'bl'} eq 'HASH') {
-                                $iface->write("\C4No HASH blacklist support yet!");
+                                $iface->write("\cC4No HASH blacklist support yet!");
                             } else {
-                                $iface->write("\C4$args[0] does not have a supported bl structure!");
+                                $iface->write("\cC4$args[0] does not have a supported bl structure!");
                                 return;
                             }
                         } else {
-                            $iface->write("\C4$args[0] does not have a bl structure!");
+                            $iface->write("\cC4$args[0] does not have a bl structure!");
                         }
                     }
                 }
