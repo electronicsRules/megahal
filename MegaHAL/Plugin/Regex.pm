@@ -99,7 +99,8 @@ use overload
   '""'   => sub { $_[0]->[0] },
   'qr'   => sub { $_[0]->[1] },
   '0+'   => sub { 0 + $_[0]->[0] },
-  'bool' => sub { $_[0]->[0] };
+  'bool' => sub { $_[0]->[0] },
+  fallback => 1;
 
 sub new {
     my ($class, $str, $re) = @_;
