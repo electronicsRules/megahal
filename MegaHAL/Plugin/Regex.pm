@@ -1,4 +1,5 @@
 package MegaHAL::Plugin::Regex;
+#use MegaHAL::Plugin::Regex::CGlobPat;
 use Text::Glob qw(glob_to_regex);
 use Safe;
 use utf8;
@@ -6,7 +7,7 @@ use feature 'switch';
 
 sub new {
     my ($class, $serv) = @_;
-    my $self = { 'chans' => {}, 'lastmsg' => {}, 'bl' => {} };
+    my $self = { 'chans' => {}, 'lastmsg' => {}, 'bl' => [] };
     $serv->reg_cb(
         'publicmsg' => sub {
             my ($this,  $nick, $ircmsg) = @_;
@@ -68,7 +69,7 @@ sub hmatch {
     my ($ref, $nick, $mask) = @_;
     my $mstr = $nick . '!' . $mask;
     foreach (@$ref) {
-        $_ = new MegaHAL::Regex::CGlobPat($_) if not ref $_;
+        $_ = MegaHAL::Plugin::Regex::CGlobPat->new($_) if not ref $_;
         return 1 if $mstr =~ $_;
     }
     return 0;
@@ -91,7 +92,7 @@ sub save {
 
 1;
 
-package MegaHAL::Regex::CGlobPat;
+package MegaHAL::Plugin::Regex::CGlobPat;
 use Text::Glob qw(glob_to_regex);
 
 use overload
@@ -102,7 +103,7 @@ use overload
 
 sub new {
     my ($class, $str, $re) = @_;
-    return bless $class, [ $str, $re || glob_to_regex($str) ];
+    return bless [ $str, $re || glob_to_regex($str) ], $class;
 }
 
 sub str { $_[0]->[0] }
