@@ -80,7 +80,7 @@ HELP
                             if (ref $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'chans'} eq 'ARRAY') {
                                 $iface->write(join " | ", @{ $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'chans'} });
                             } elsif (ref $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'chans'} eq 'HASH') {
-                                $iface->write(join " | ", map { $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'chans'}->{$_} ne 1 ? $_ . ':"' . $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'chans'}->{$_} . '"' : $_ } %{ $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'chans'} });
+                                $iface->write(join " | ", map { $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'chans'}->{$_} ne 1 ? $_ . ':"' . $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'chans'}->{$_} . '"' : $_ } keys %{ $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'chans'} });
                             } else {
                                 $iface->write("\cC4$args[0] does not have a supported chans structure!");
                                 return;
