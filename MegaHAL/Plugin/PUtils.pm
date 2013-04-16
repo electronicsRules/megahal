@@ -18,6 +18,7 @@ sub new {
                         $iface->write(<<'HELP');
 <plugin> add <channel> [argument]
 <plugin> rem <channel>
+<plugin> list
 <plugin> set <channel> [argument]
 <plugin> +b <mask>
 <plugin> -b <mask>
@@ -74,6 +75,20 @@ HELP
                             $iface->write("\cC4$args[0] does not have a chans structure!");
                         }
                     }
+                    when ('list') {
+                        if (exists $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'chans'}) {
+                            if (ref $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'chans'} eq 'ARRAY') {
+                                $iface->write(join " | ", @{ $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'chans'} });
+                            } elsif (ref $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'chans'} eq 'HASH') {
+                                $iface->write(join " | ", map { $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'chans'}->{$_} ne 1 ? $_ . ':"' . $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'chans'}->{$_} . '"' : $_ } %{ $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'chans'} });
+                            } else {
+                                $iface->write("\cC4$args[0] does not have a supported chans structure!");
+                                return;
+                            }
+                        } else {
+                            $iface->write("\cC4$args[0] does not have a chans structure!");
+                        }
+                    }
                     when ('+b') {
                         if (exists $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'bl'}) {
                             if (ref $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'bl'} eq 'ARRAY') {
@@ -112,6 +127,7 @@ HELP
             }
         }
     );
+    return bless $self, $class;
 }
 
 1;
