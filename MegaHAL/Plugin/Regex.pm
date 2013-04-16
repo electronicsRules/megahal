@@ -16,7 +16,7 @@ sub new {
             my $message = $ircmsg->{'params'}->[1];
             my $mstr    = join '', keys %{$modes};
             return if $command ne 'PRIVMSG' or $this->is_my_nick($nick);
-            if ($self->{'chans'}->{lc($chan)} && !(hmatch($self->{'bl'},$nick,$ident))) {
+            if ($self->{'chans'}->{ lc($chan) } && !(hmatch($self->{'bl'}, $nick, $ident))) {
                 if ($message =~ /^ps\/.*\/.*\/[ige]*$/) {
                     my ($B, $C, $U, $O, $V) = ("\cB", "\cC", "\c_", "\cO", "\cV");
                     $message =~ s/\\\\/\x{FFFE}/g;
@@ -55,7 +55,7 @@ sub new {
     $serv->reg_cb(
         'publicaction' => sub {
             my ($this, $nick, $chan, $message) = @_;
-            $chan=lc($chan);
+            $chan = lc($chan);
             if (!$serv->is_my_nick($nick) and $self->{'chans'}->{$chan}) {
                 $self->{'lastmsg'}->{$chan} = [ $nick, $message, 1 ];
             }
@@ -65,28 +65,28 @@ sub new {
 }
 
 sub hmatch {
-	my ($ref, $nick, $mask)=@_;
-	my $mstr=$nick.'!'.$mask;
-	foreach (@$ref) {
-		$_=new MegaHAL::Regex::CGlobPat($_) if not ref $_;
-		return 1 if $mstr=~$_;
-	}
-	return 0;
+    my ($ref, $nick, $mask) = @_;
+    my $mstr = $nick . '!' . $mask;
+    foreach (@$ref) {
+        $_ = new MegaHAL::Regex::CGlobPat($_) if not ref $_;
+        return 1 if $mstr =~ $_;
+    }
+    return 0;
 }
 
 sub load {
     my ($self, $data) = @_;
     if (ref $data eq 'ARRAY') {
-		$self->{'chans'} = $data->[0];
-		$self->{'bl'} = $data->[1]->{'bl'};
-	}else{
-		$self->{'chans'} = $data;
-	}
+        $self->{'chans'} = $data->[0];
+        $self->{'bl'}    = $data->[1]->{'bl'};
+    } else {
+        $self->{'chans'} = $data;
+    }
 }
 
 sub save {
     my ($self) = @_;
-    return [$self->{'chans'},{'bl' => [map {ref $_ ? $_->str : $_} @{$self->{'bl'}}]}];
+    return [ $self->{'chans'}, { 'bl' => [ map { ref $_ ? $_->str : $_ } @{ $self->{'bl'} } ] } ];
 }
 
 1;
@@ -95,17 +95,17 @@ package MegaHAL::Regex::CGlobPat;
 use Text::Glob qw(glob_to_regex);
 
 use overload
-	'""' => sub {$_[0]->[0]},
-	'qr' => sub {$_[0]->[1]},
-	'0+' => sub {0+$_[0]->[0]},
-	'bool' => sub {$_[0]->[0]};
+  '""'   => sub { $_[0]->[0] },
+  'qr'   => sub { $_[0]->[1] },
+  '0+'   => sub { 0 + $_[0]->[0] },
+  'bool' => sub { $_[0]->[0] };
 
 sub new {
-	my ($class,$str,$re)=@_;
-	return bless $class, [$str, $re || glob_to_regex($str)];
+    my ($class, $str, $re) = @_;
+    return bless $class, [ $str, $re || glob_to_regex($str) ];
 }
 
-sub str {$_[0]->[0]}
-sub re {$_[0]->[1]}
+sub str { $_[0]->[0] }
+sub re  { $_[0]->[1] }
 
 1;
