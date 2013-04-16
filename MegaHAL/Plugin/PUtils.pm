@@ -113,7 +113,7 @@ HELP
                         if (exists $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'bl'}) {
                             if (ref $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'bl'} eq 'ARRAY') {
                                 foreach (0 .. scalar(@{ $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'bl'} })) {
-                                    if ($serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'bl'}->[$_] eq $args[0]) {
+                                    if ($serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'bl'}->[$_] eq $args[2]) {
                                         splice @{ $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'bl'} }, $_, 1;
                                         $iface->write("Un-blacklisted $args[2] from plugin $args[0] [ARRAY] successfully.");
                                     }
