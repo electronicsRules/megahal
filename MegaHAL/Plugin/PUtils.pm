@@ -16,12 +16,13 @@ sub new {
                 given ($args[1]) {
                     when ('help') {
                         $iface->write(<<'HELP');
-<plugin> add <channel> [argument]
-<plugin> rem <channel>
-<plugin> list
-<plugin> set <channel> [argument]
-<plugin> +b <mask>
-<plugin> -b <mask>
+<plugin> add <channel> [argument]    Add this plugin to the channel.
+<plugin> rem <channel>               Remove this plugin from the channel.
+<plugin> list                        List channels that this plugin is registered to.
+<plugin> set <channel> [argument]    Set this plugin's chanopts. XXX: BREAKS URL PLUGIN UNTIL FURTHER NOTICE!
+<plugin> +b <mask>                   Blacklists hostmask.
+<plugin> +b                          Lists blacklists.
+<plugin> -b <mask>                   Removes hostmask from blacklist.
 HELP
                     }
                     when ('add') {
@@ -92,8 +93,12 @@ HELP
                     when ('+b') {
                         if (exists $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'bl'}) {
                             if (ref $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'bl'} eq 'ARRAY') {
-                                push @{ $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'bl'} }, $args[2];
-                                $iface->write("Blacklisted $args[2] from plugin $args[0] [ARRAY] successfully.");
+                                if ($args[2]) {
+									push @{ $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'bl'} }, $args[2];
+									$iface->write("Blacklisted $args[2] from plugin $args[0] [ARRAY] successfully.");
+								}else{
+									$iface->write(join " | ", @{ $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'bl'} });
+								}
                             } elsif (ref $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'bl'} eq 'HASH') {
                                 $iface->write("\cC4No HASH blacklist support yet!");
                             } else {
