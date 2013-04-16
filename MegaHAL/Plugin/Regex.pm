@@ -17,8 +17,8 @@ sub new {
             my $message = $ircmsg->{'params'}->[1];
             my $mstr    = join '', keys %{$modes};
             return if $command ne 'PRIVMSG' or $this->is_my_nick($nick);
-            if ($self->{'chans'}->{ lc($chan) } && !(hmatch($self->{'bl'}, $nick, $ident))) {
-                if ($message =~ /^ps\/.*\/.*\/[ige]*$/) {
+            if ($self->{'chans'}->{ lc($chan) }) {
+                if ($message =~ /^ps\/.*\/.*\/[ige]*$/ && !(hmatch($self->{'bl'}, $nick, $ident))) {
                     my ($B, $C, $U, $O, $V) = ("\cB", "\cC", "\c_", "\cO", "\cV");
                     $message =~ s/\\\\/\x{FFFE}/g;
                     $message =~ s/\\\//\x{FFFF}/g;
