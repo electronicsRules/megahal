@@ -11,12 +11,12 @@ use HTML::Entities;
 
 sub new {
     my ($class, $serv) = @_;
-    my $self = { 'chans' => {} };
+    my $self = { 'chans' => {}, 'bl' => [] };
     bless $self, $class;
     my $cb = sub {
         my ($_plugins, $nick, $chan, $message) = @_;
         #print "1 $nick -> $chan $message\n";
-        if ($self->{'chans'}->{$chan}) {
+        if ($self->{'chans'}->{$chan} && !(hmatch($self->{'bl'}, $nick, substr($serv->nick_ident($nick), length($nick) + 1)))) {
             #print "2 $chan $message\n";
             my @urls = ($message =~ m#https?://([^ ]+)#g);
             my $n    = 0;
@@ -224,12 +224,17 @@ sub new {
 
 sub load {
     my ($self, $data) = @_;
-    $self->{'chans'} = $data;
+    if (ref $data eq 'ARRAY') {
+        $self->{'chans'} = $data->[0];
+        $self->{'bl'}    = $data->[1]->{'bl'};
+    } else {
+        $self->{'chans'} = $data;
+    }
 }
 
 sub save {
     my ($self) = @_;
-    return $self->{'chans'};
+    return [ $self->{'chans'}, { 'bl' => [ map { ref $_ ? $_->str : $_ } @{ $self->{'bl'} } ] } ];
 }
 
 sub metric {
@@ -281,4 +286,35 @@ sub remove_bbcode {
     $str =~ s#\[quote\](.*?)\[/quote\]#$1#g;
     return $str;
 }
+
+sub hmatch {
+    my ($ref, $nick, $mask) = @_;
+    my $mstr = $nick . '!' . $mask;
+    foreach (@$ref) {
+        $_ = MegaHAL::Plugin::Regex::CGlobPat->new($_) if not ref $_;
+        return 1 if $mstr =~ $_;
+    }
+    return 0;
+}
+
+1;
+
+package MegaHAL::Plugin::Regex::CGlobPat;
+use Text::Glob qw(glob_to_regex);
+
+use overload
+  '""'     => sub { $_[0]->[0] },
+  'qr'     => sub { $_[0]->[1] },
+  '0+'     => sub { 0 + $_[0]->[0] },
+  'bool'   => sub { $_[0]->[0] },
+  fallback => 1;
+
+sub new {
+    my ($class, $str, $re) = @_;
+    return bless [ $str, $re || glob_to_regex($str) ], $class;
+}
+
+sub str { $_[0]->[0] }
+sub re  { $_[0]->[1] }
+
 1;

@@ -94,11 +94,11 @@ HELP
                         if (exists $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'bl'}) {
                             if (ref $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'bl'} eq 'ARRAY') {
                                 if ($args[2]) {
-									push @{ $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'bl'} }, $args[2];
-									$iface->write("Blacklisted $args[2] from plugin $args[0] [ARRAY] successfully.");
-								}else{
-									$iface->write(join " | ", @{ $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'bl'} });
-								}
+                                    push @{ $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'bl'} }, $args[2];
+                                    $iface->write("Blacklisted $args[2] from plugin $args[0] [ARRAY] successfully.");
+                                } else {
+                                    $iface->write(join " | ", @{ $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'bl'} });
+                                }
                             } elsif (ref $serv->{'plugins'}->{'plugins'}->{ $args[0] }->{'bl'} eq 'HASH') {
                                 $iface->write("\cC4No HASH blacklist support yet!");
                             } else {
