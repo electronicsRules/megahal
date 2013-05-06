@@ -138,7 +138,12 @@ sub new {
                                     my ($B, $C, $U, $O, $V) = ("\cB", "\cC", "\c_", "\cO", "\cV");
                                     $o->{'tags'} =~ s/, /,/g;
                                     my $srtregex = qr/(?:(?:foalcon)|(?:suggestive)|(?:grimdark)|(?:questionable)|(?:explicit)|(?:rape))/;
-                                    $o->{'tags'} = join ',', sort { $b =~ /^artist:/ <=> $a =~ /^artist:/ } sort { $b =~ $srtregex <=> $a =~ $srtregex } sort { $b =~ /^spoiler:/ <=> $a =~ /^spoiler:/ } split /,/, $o->{'tags'};
+                                    my @tags=sort { $b =~ /^artist:/ <=> $a =~ /^artist:/ } sort { $b =~ $srtregex <=> $a =~ $srtregex } sort { $b =~ /^spoiler:/ <=> $a =~ /^spoiler:/ } split /,/, $o->{'tags'};
+                                    my $max=30;
+                                    $o->{'tags'}=join ',', @tags(0..$max-1);
+                                    if (scalar(@tags) > $max) {
+										$o->{'tags'}.='<...>';
+									}
                                     $o->{'tags'} =~ s/artist:([^ ,]+?),/artist:${C}06${1}${C}12${B}${B},/g;
                                     $o->{'tags'} =~ s/spoiler:([^ ,]+?),/spoiler:${C}04${1}${C}12${B}${B},/g;
                                     $o->{'tags'} =~ s/((?:foalcon)|(?:suggestive)|(?:grimdark)|(?:questionable)|(?:explicit)|(?:[^,]*rape[^,]*)),/${C}05${1}${C}12${B}${B},/g;
