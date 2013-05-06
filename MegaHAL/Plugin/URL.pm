@@ -140,7 +140,7 @@ sub new {
                                     my $srtregex = qr/(?:(?:foalcon)|(?:suggestive)|(?:grimdark)|(?:questionable)|(?:explicit)|(?:rape))/;
                                     my @tags     = sort { $b =~ /^artist:/ <=> $a =~ /^artist:/ } sort { $b =~ $srtregex <=> $a =~ $srtregex } sort { $b =~ /^spoiler:/ <=> $a =~ /^spoiler:/ } split /,/, $o->{'tags'};
                                     my $max      = 30;
-                                    $o->{'tags'} = join ',', @tags[ 0 .. $max - 1 ];
+                                    $o->{'tags'} = join ',', grep { $_ } @tags[ 0 .. $max - 1 ];
                                     if (scalar(@tags) > $max) {
                                         $o->{'tags'} .= '<...>';
                                     }
