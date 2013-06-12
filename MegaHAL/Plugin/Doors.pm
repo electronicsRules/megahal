@@ -29,7 +29,7 @@ sub new {
 							});
 						}
 					}else{
-						$serv->msg($chan,"${C}5I'm sorry, ${B}$nick${O}, but I can\'t let you do that.");
+						$serv->msg($chan,"${C}5I'm sorry, ${B}$nick${B}, but I can\'t let you do that.");
 					}
                     return;
                 }
