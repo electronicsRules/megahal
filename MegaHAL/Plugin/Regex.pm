@@ -45,7 +45,7 @@ sub new {
                     } elsif (${ $s->varglob('mtch') }) {
                         $serv->msg($chan, sprintf(($self->{'lastmsg'}->{$chan}->[2] ? '* %s %s' : '<%s> %s'), $self->{'lastmsg'}->{$chan}->[0], $ret));
                     } else {
-                        $serv->msg($chan, $nick . ': No match.');
+                        $serv->msg($chan, 'I\'m sorry, ' . $nick . ', but I can\'t let you do that. (no match)');
                     }
                     return;
                 }

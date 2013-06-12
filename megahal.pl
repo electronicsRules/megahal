@@ -571,7 +571,7 @@ sub command {
         }
         if (ref $subt->[2] eq 'CODE') {    #Command
             unless ($blanket || $iface->acan($plugin, (join '.', (@$parents, $cmd)))) {
-                $iface->write("\cC4Permission denied.\n");
+                $iface->write("\cC4I'm sorry, but I can't let you do that.\n");
                 return -1;
             }
             $subt->[2]->($iface, @$nargs, @$nscmd);
