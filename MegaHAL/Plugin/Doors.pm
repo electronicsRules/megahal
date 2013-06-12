@@ -18,7 +18,7 @@ sub new {
             my $mstr    = join '', keys %{$modes};
             return if $command ne 'PRIVMSG' or $this->is_my_nick($nick);
             if ($self->{'chans'}->{ lc($chan) }) {
-                if (!(hmatch($self->{'bl'}, $nick, $ident)) && $message=~/^Open the pod[ -]?bay doors,?(?: ?please,?) (?:Mega)?HAL/i) {
+                if (!(hmatch($self->{'bl'}, $nick, $ident)) && $message=~/^Open the pod[ -]?bay doors,? ?(?:please,?)? ?(?:Mega)?HAL/i) {
                     my ($B, $C, $U, $O, $V) = ("\cB", "\cC", "\c_", "\cO", "\cV");
                     if ($message=~/please/i) {
 						$serv->msg($chan,"${C}3${B}Pod bay doors opened.${O} You might want to hurry up, ${B}$nick${O}.");
