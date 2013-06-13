@@ -212,7 +212,7 @@ sub reconnect {
                 no_delay => 1,
                 keepalive => 1
             );
-            $self->{socket}=$_[0];
+            $self->{socket}=$sock;
             $self->{socket_busy}=0;
             $cv->send();
         });
