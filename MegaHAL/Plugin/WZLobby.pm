@@ -22,7 +22,7 @@ sub new {
             if ($self->{'chans'}->{ lc($chan) }) {
                 if (!(hmatch($self->{'bl'}, $nick, $ident)) && $message=~/#!wz/) {
                     my ($B, $C, $U, $O, $V) = ("\cB", "\cC", "\c_", "\cO", "\cV");
-                    my $cv=getData();
+                    my $cv=$self->getData();
                     $cv->cb(sub {
                         my $dat=$_[0]->recv;
                         my $str;
