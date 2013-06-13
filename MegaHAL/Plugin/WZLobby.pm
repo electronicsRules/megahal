@@ -173,6 +173,7 @@ sub reconnect {
     my ($self)=@_;
     my $cv=AnyEvent->condvar;
     $self->debug("Socket reconnect #1");
+    return if $self->{socket_busy};
     $self->{socket_busy}=1;
     if ($self->{socket}) {
         my $cv2=AnyEvent->condvar;
@@ -195,6 +196,7 @@ sub reconnect {
         tcp_connect("lobby.wz2100.net",9990,sub {
             return if $self->{die};
             $self->debug("Socket connected");
+            $self->{socket}=$_[0];
             $self->{socket_busy}=0;
             $cv->send();
         });
