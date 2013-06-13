@@ -9,7 +9,7 @@ use feature 'switch';
 
 sub new {
     my ($class, $serv) = @_;
-    my $self = { 'chans' => {}, 'bl' => [], 'timers' => [], 'socket' => undef, 'socket_busy' => 0, 'debug' => 1 };
+    my $self = { 'chans' => {}, 'bl' => [], 'timers' => [], 'socket' => undef, 'socket_busy' => 0, 'debug' => 1, 'die' => 0 };
     $serv->reg_cb(
         'publicmsg' => sub {
             my ($this,  $nick, $ircmsg) = @_;
@@ -54,12 +54,15 @@ sub debug {
 
 sub getData {
     my ($self)=@_;
+    return if $self->{die};
     my $cv=AnyEvent->condvar;
     if ($self->{socket_busy}) {
         $self->debug("Socket busy #1");
         $self->{socket_busy}->cb(sub {
+            return if $self->{die};
             $self->debug("Socket busy #2");
             $self->getData()->cb(sub {
+                return if $self->{die};
                 $self->debug("Socket busy #3");
                 $cv->send($_[0]->recv);
             });
@@ -69,8 +72,10 @@ sub getData {
     if (!$self->{socket}) {
         $self->debug("Socket (re)connect #1");
         $self->reconnect->cb(sub {
+            return if $self->{die};
             $self->debug("Socket (re)connect #2");
             $self->getData()->cb(sub {
+                return if $self->{die};
                 $self->debug("Socket (re)connect #3");
                 $cv->send($_[0]->recv());
             });
@@ -84,11 +89,13 @@ sub getData {
         my @games;
         my $ng;
         $ng=sub {
+            return if $self->{die};
             $self->debug("Socket getData #2");
             my ($hdl,$dat)=@_;
             if (substr($dat,-5,1) eq "\0") { #welcome msg
                 $self->debug("Socket getData WLCM #1");
                 $self->{socket}->unshift_read(chunk => 256, sub {
+                    return if $self->{die};
                     $self->debug("Socket getData WLCM #2");
                     my $welcome=(unpack('xZ*',$_[1]))[-1];
                     if ($welcome!~/Welcome/) {
@@ -103,6 +110,7 @@ sub getData {
                 });
             }else{
                 $self->{socket}->unshift_read(chunk => $gamelen, sub {
+                    return if $self->{die};
                     $self->debug("Socket getData #3");
                     my (
                         $GAMESTRUCT_VERSION,
@@ -165,6 +173,7 @@ sub reconnect {
     my ($self)=@_;
     my $cv=AnyEvent->condvar;
     $self->debug("Socket reconnect #1");
+    $self->{socket_busy}=1;
     if ($self->{socket}) {
         my $cv2=AnyEvent->condvar;
         $self->{socket}->on_drain(sub {
@@ -174,15 +183,19 @@ sub reconnect {
         });
         $self->{socket}->low_water_mark(0);
         $cv2->cb(sub {
+            return if $self->{die};
             $self->debug("Socket reconnect #2");
             $self->reconnect()->cb(sub{
+                return if $self->{die};
                 $self->debug("Socket reconnect #3");
                 $cv->send($_[0]->recv);
             });
         });
     }else{
         tcp_connect("lobby.wz2100.net",9990,sub {
+            return if $self->{die};
             $self->debug("Socket connected");
+            $self->{socket_busy}=0;
             $cv->send();
         });
     }
@@ -212,6 +225,10 @@ sub load {
 sub save {
     my ($self) = @_;
     return [ $self->{'chans'}, { 'bl' => [ map { ref $_ ? $_->str : $_ } @{ $self->{'bl'} } ] } ];
+}
+
+sub DESTROY {
+    $self->{die}=1;
 }
 
 1;
