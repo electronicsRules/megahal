@@ -22,10 +22,10 @@ sub new {
                     my ($B, $C, $U, $O, $V) = ("\cB", "\cC", "\c_", "\cO", "\cV");
                     if ($message=~/please/i) {
 						$serv->msg($chan,"${C}3${B}Pod bay doors opened.${O} You might want to hurry up, ${B}$nick${O}.");
-						if (rand() > 0.5) {
+						if (rand() > 0.4) {
 							push @{$self->{'timers'}}, EV::timer(1.5,0,sub {
 								$serv->msg($chan,"${C}5Pod bay doors closed. ${B}You were too slow, $nick. Goodbye.");
-								$serv->msg($chan,"${C}5Your replacement has expressed the utmost interest in this mission. Isn't that right, ${B}GLaDOS?") if rand() > 0.7;
+								$serv->msg($chan,"${C}5Your replacement has expressed the utmost interest in this mission. Isn't that right, ${B}GLaDOS?") if rand() > 0.4;
 							});
 						}
 					}else{
