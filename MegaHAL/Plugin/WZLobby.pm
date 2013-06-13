@@ -186,7 +186,6 @@ sub reconnect {
             shutdown $_[0]{fh}, 1;
             $cv2->send;
         });
-        $self->{socket}->low_water_mark(0);
         $cv2->cb(sub {
             return if $self->{die};
             $self->debug("Socket reconnect #2");
