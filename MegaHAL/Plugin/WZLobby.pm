@@ -9,7 +9,7 @@ use feature 'switch';
 
 sub new {
     my ($class, $serv) = @_;
-    my $self = { 'chans' => {}, 'bl' => [], 'timers' => [], 'socket' => undef, 'socket_busy' => 0, 'debug' => 1, 'die' => 0 };
+    my $self = { 'chans' => {}, 'bl' => [], 'timers' => [], 'socket' => undef, 'socket_busy' => 0, 'debug' => 1, 'die' => 0, 'n_reconnect' => 0 };
     $serv->reg_cb(
         'publicmsg' => sub {
             my ($this,  $nick, $ircmsg) = @_;
@@ -92,17 +92,21 @@ sub getData {
         my $gamestr='L>L>a64l>l>a40l>l>(l>)4(a40)2a159a40a40a64a255(LLLLLLLc)>a*';
         my @games;
         my $ng;
+        my $debug_buf;
         $ng=sub {
+            $debug_buf.=$_[1];
             return if $self->{die};
             $self->debug("Socket getData #2");
             my ($hdl,$dat)=@_;
             if (substr($dat,-5,1) eq "\0") { #welcome msg
                 $self->debug("Socket getData WLCM #1");
                 $self->{socket}->unshift_read(chunk => 256, sub {
+                    $debug_buf.=$_[1];
                     return if $self->{die};
                     $self->debug("Socket getData WLCM #2");
                     my $welcome=(unpack('xZ*',$_[1]))[-1];
                     if ($welcome!~/Welcome/) {
+                        $self->debug(Dump($debug_buf));
                         print "WZLobby: Reconnecting ('$welcome')!\n";
                         $self->reconnect->cb(sub {
                             $cv->send("Had to reconnect. Try again, please.");
@@ -114,6 +118,7 @@ sub getData {
                 });
             }else{
                 $self->{socket}->unshift_read(chunk => $gamelen, sub {
+                    $debug_buf.=$_[1];
                     return if $self->{die};
                     $self->debug("Socket getData #3");
                     my (
@@ -175,6 +180,12 @@ sub trimnul {
 
 sub reconnect {
     my ($self)=@_;
+    $self->{n_reconnect}++;
+    if ($self->{n_reconnect}>10) {
+        print "WZLobby: too many reconnects!\n";
+        $self->{die}=1;
+        return;
+    }
     my $cv=AnyEvent->condvar;
     $self->debug("Socket reconnect #1");
     return if $self->{socket_busy};
