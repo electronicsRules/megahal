@@ -28,7 +28,7 @@ sub new {
                         my $str;
                         if (ref($dat) eq 'ARRAY') {
                             $str="Games in lobby: ";
-                            if (scalar(@dat) == 0)) {
+                            if (scalar(@dat) == 0) {
                                 $str.="${C}5none";
                             }else{
                                 $str.=join " | ", map {sprintf "[%s] %s by %s (wz %s) at %s", $_->{name}, $_->{mapname}, $_->{hostname}, $_->{versionstring}, $_->{host}} @$dat;
