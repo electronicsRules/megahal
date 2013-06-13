@@ -73,6 +73,10 @@ sub getData {
         $self->debug("Socket (re)connect #1");
         $self->reconnect->cb(sub {
             return if $self->{die};
+            if ($_[0]->recv()) {
+                $cv->send($_[0]->recv());
+                return $cv;
+            }
             $self->debug("Socket (re)connect #2");
             $self->getData()->cb(sub {
                 return if $self->{die};
@@ -196,6 +200,18 @@ sub reconnect {
         tcp_connect("lobby.wz2100.net",9990,sub {
             return if $self->{die};
             $self->debug("Socket connected");
+            my $sock=new AnyEvent::Handle(
+                fh => $_[0],
+                on_error => sub {
+                    my ($hdl,$ftl,$msg)=@_;
+                    print "WZLobby: handle error $msg\n";
+                    $hdl->destroy;
+                    $cv->send($msg);
+                },
+                autocork => 1,
+                no_delay => 1,
+                keepalive => 1
+            );
             $self->{socket}=$_[0];
             $self->{socket_busy}=0;
             $cv->send();
