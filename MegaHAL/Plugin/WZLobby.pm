@@ -9,7 +9,7 @@ use feature 'switch';
 
 sub new {
     my ($class, $serv) = @_;
-    my $self = { 'chans' => {}, 'bl' => [], 'timers' => [], 'socket' => undef, 'socket_busy' => 0 };
+    my $self = { 'chans' => {}, 'bl' => [], 'timers' => [], 'socket' => undef, 'socket_busy' => 0, 'debug' => 1 };
     $serv->reg_cb(
         'publicmsg' => sub {
             my ($this,  $nick, $ircmsg) = @_;
@@ -24,6 +24,7 @@ sub new {
                     my ($B, $C, $U, $O, $V) = ("\cB", "\cC", "\c_", "\cO", "\cV");
                     my $cv=$self->getData();
                     $cv->cb(sub {
+                        $self->debug("Socket getData #1");
                         my $dat=$_[0]->recv;
                         my $str;
                         if (ref($dat) eq 'ARRAY') {
@@ -46,24 +47,36 @@ sub new {
     return bless $self, $class;
 }
 
+sub debug {
+    my ($self,@rest)=@_;
+    print @rest if $self->{debug};
+}
+
 sub getData {
     my ($self)=@_;
     my $cv=AnyEvent->condvar;
     if ($self->{socket_busy}) {
+        $self->debug("Socket busy #1");
         $self->{socket_busy}->cb(sub {
+            $self->debug("Socket busy #2");
             $self->getData()->cb(sub {
+                $self->debug("Socket busy #3");
                 $cv->send($_[0]->recv);
             });
         });
         return $cv;
     }
     if (!$self->{socket}) {
+        $self->debug("Socket (re)connect #1");
         $self->reconnect->cb(sub {
+            $self->debug("Socket (re)connect #2");
             $self->getData()->cb(sub {
+                $self->debug("Socket (re)connect #3");
                 $cv->send($_[0]->recv());
             });
         });
     }else{
+        $self->debug("Socket getData #1");
         $self->{socket}->push_write("LIST\n\r");
         my $preflen=3+4*2+4;
         my $gamelen=60+4*2+40+4*6+40*2+159+40*2+64+255+4*7+1;
@@ -71,9 +84,12 @@ sub getData {
         my @games;
         my $ng;
         $ng=sub {
+            $self->debug("Socket getData #2");
             my ($hdl,$dat)=@_;
             if (substr($dat,-5,1) eq "\0") { #welcome msg
+                $self->debug("Socket getData WLCM #1");
                 $self->{socket}->unshift_read(chunk => 256, sub {
+                    $self->debug("Socket getData WLCM #2");
                     my $welcome=(unpack('xZ*',$_[1]))[-1];
                     if ($welcome!~/Welcome/) {
                         print "WZLobby: Reconnecting ('$welcome')!\n";
@@ -87,6 +103,7 @@ sub getData {
                 });
             }else{
                 $self->{socket}->unshift_read(chunk => $gamelen, sub {
+                    $self->debug("Socket getData #3");
                     my (
                         $GAMESTRUCT_VERSION,
                         $rubbish_01,
@@ -147,20 +164,25 @@ sub trimnul {
 sub reconnect {
     my ($self)=@_;
     my $cv=AnyEvent->condvar;
+    $self->debug("Socket reconnect #1");
     if ($self->{socket}) {
         my $cv2=AnyEvent->condvar;
         $self->{socket}->on_drain(sub {
+            $self->debug("Socket drained");
             shutdown $_[0]{fh}, 1;
             $cv2->send;
         });
         $self->{socket}->low_water_mark(0);
         $cv2->cb(sub {
+            $self->debug("Socket reconnect #2");
             $self->reconnect()->cb(sub{
+                $self->debug("Socket reconnect #3");
                 $cv->send($_[0]->recv);
             });
         });
     }else{
         tcp_connect("lobby.wz2100.net",9990,sub {
+            $self->debug("Socket connected");
             $cv->send();
         });
     }
