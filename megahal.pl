@@ -7,7 +7,7 @@ use AnyEvent::HTTP;
 use YAML::Any qw(LoadFile DumpFile Dump);
 use AnyEvent::ReadLine::Gnu;
 use Text::ParseWords;
-use Getopt::Long qw(GetOptionsFromArray);
+use Getopt::Long qw(GetOptionsFromArray GetOptions);
 use MegaHAL::Filehandle;
 use MegaHAL::Server;
 use MegaHAL::Interface::Console;
@@ -16,6 +16,11 @@ use Term::ANSIColor qw(colorstrip);
 use MegaHAL::Telnet;
 our $VERSION = '1.5';
 our @cmdt;
+our %opts;
+$opts{telnet}=1;
+GetOptions(\%opts,
+    'telnet!'
+);
 my $old_stdout;
 open($old_stdout, '>&STDOUT') or die "Can't dup STDOUT!\n";
 my $c = AnyEvent->condvar;
@@ -65,7 +70,7 @@ our $extip;
 sub init {
     load();
     MegaHAL::ACL::init();    #Connect to ACL database
-    MegaHAL::Telnet::init();
+    MegaHAL::Telnet::init() if $opts{telnet};
     $c->recv;
 }
 
