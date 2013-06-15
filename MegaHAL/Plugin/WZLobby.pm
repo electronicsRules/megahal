@@ -3,13 +3,14 @@ use Text::Glob qw(glob_to_regex);
 use AnyEvent::Socket;
 use AnyEvent::Handle;
 use EV;
+use YAML::Any qw(Dump);
 use Safe;
 use utf8;
 use feature 'switch';
 
 sub new {
     my ($class, $serv) = @_;
-    my $self = { 'chans' => {}, 'bl' => [], 'timers' => [], 'socket' => undef, 'socket_busy' => 0, 'debug' => 1, 'die' => 0, 'n_reconnect' => 0 };
+    my $self = { 'chans' => {}, 'bl' => [], 'timers' => [], 'socket' => undef, 'socket_busy' => 0, 'debug' => 0, 'die' => 0, 'n_reconnect' => 0 };
     $serv->reg_cb(
         'publicmsg' => sub {
             my ($this,  $nick, $ircmsg) = @_;
@@ -22,17 +23,18 @@ sub new {
             if ($self->{'chans'}->{ lc($chan) }) {
                 if (!(hmatch($self->{'bl'}, $nick, $ident)) && $message=~/#!wz/) {
                     my ($B, $C, $U, $O, $V) = ("\cB", "\cC", "\c_", "\cO", "\cV");
+                    #$self->{n_reconnect}-- if $self->{n_reconnect} > 0;
                     my $cv=$self->getData();
                     $cv->cb(sub {
-                        $self->debug("Socket getData #1");
+                        $self->debug("Socket gotData");
                         my $dat=$_[0]->recv;
                         my $str;
                         if (ref($dat) eq 'ARRAY') {
-                            $str="Games in lobby: ";
-                            if (scalar(@dat) == 0) {
+                            #$str="Games in lobby: ";
+                            if (scalar(@$dat) == 0) {
                                 $str.="${C}5none";
                             }else{
-                                $str.=join " | ", map {sprintf "[%s] %s by %s (wz %s) at %s", $_->{name}, $_->{mapname}, $_->{hostname}, $_->{versionstring}, $_->{host}} @$dat;
+                                $str.=join " | ", map {sprintf "${C}12${B}%s${O} by ${C}3${B}%s${O} on ${C}6${B}%s${O} (${C}3wz ${B}%s${O}) at %s", $_->{name}, $_->{hostname}, $_->{mapname}, $_->{'version'}, $_->{host}} @$dat;
                             }
                         }else{
                             $str="${C}5Error: $dat";
@@ -100,18 +102,23 @@ sub getData {
             my ($hdl,$dat)=@_;
             if (substr($dat,-5,1) eq "\0") { #welcome msg
                 $self->debug("Socket getData WLCM #1");
-                $self->{socket}->unshift_read(chunk => 256, sub {
+                $self->{socket}->unshift_read(chunk => 253, sub {
                     $debug_buf.=$_[1];
+                    my $wdat=$dat.$_[1];
                     return if $self->{die};
                     $self->debug("Socket getData WLCM #2");
-                    my $welcome=(unpack('xZ*',$_[1]))[-1];
+                    my $welcome=(unpack('cccL>L>xZ*',$wdat))[-1];
                     if ($welcome!~/Welcome/) {
                         $self->debug(Dump($debug_buf));
                         print "WZLobby: Reconnecting ('$welcome')!\n";
                         $self->reconnect->cb(sub {
-                            $cv->send("Had to reconnect. Try again, please.");
+                            #$cv->send("Had to reconnect. Try again, please.");
+                            $self->getData()->cb(sub{
+                                $cv->send($_[0]->recv);
+                            });
                         });
                     }else {
+                        $self->debug(Dump(\@games));
                         $cv->send(\@games);
                     }
                     undef $ng;
@@ -144,7 +151,7 @@ sub getData {
                         $limits,
                         $future3,#$future4,
                         $buf_2
-                    )=unpack($gamestr,$_[1]);
+                    )=unpack($gamestr,$dat.$_[1]);
                     push @games, {
                         name => trimnul($name),
                         dwSize => $dwSize,
@@ -189,17 +196,19 @@ sub reconnect {
     my $cv=AnyEvent->condvar;
     $self->debug("Socket reconnect #1");
     return if $self->{socket_busy};
-    $self->{socket_busy}=1;
     if ($self->{socket}) {
+        $self->{socket_busy}=1;
         my $cv2=AnyEvent->condvar;
         $self->{socket}->on_drain(sub {
             $self->debug("Socket drained");
             shutdown $_[0]{fh}, 1;
+            $self->{socket}=undef;
             $cv2->send;
         });
         $cv2->cb(sub {
             return if $self->{die};
             $self->debug("Socket reconnect #2");
+            $self->{socket_busy}=0;
             $self->reconnect()->cb(sub{
                 return if $self->{die};
                 $self->debug("Socket reconnect #3");
@@ -207,6 +216,7 @@ sub reconnect {
             });
         });
     }else{
+        $self->{socket_busy}=1;
         tcp_connect("lobby.wz2100.net",9990,sub {
             return if $self->{die};
             $self->debug("Socket connected");
