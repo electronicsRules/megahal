@@ -226,7 +226,11 @@ sub reconnect {
                     my ($hdl,$ftl,$msg)=@_;
                     print "WZLobby: handle error $msg\n";
                     $hdl->destroy;
-                    $cv->send($msg);
+                    $self->{socket}=undef;
+                    #$cv->send($msg);
+                    $self->reconnect()->cb(sub {
+                        $cv->send($_[0]->recv);
+                    });
                 },
                 autocork => 1,
                 no_delay => 1,
