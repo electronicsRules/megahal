@@ -34,7 +34,7 @@ sub new {
                             if (scalar(@$dat) == 0) {
                                 $str.="${C}5none";
                             }else{
-                                $str.=join " | ", map {sprintf "${C}12${B}%s${O} by ${C}3${B}%s${O} on ${C}6${B}%s${O} (${C}3wz ${B}%s${O}) at %s", $_->{name}, $_->{hostname}, $_->{mapname}, $_->{'version'}, $_->{host}} @$dat;
+                                $str.=join " | ", map {sprintf "${C}12${B}%s${O} by ${C}3${B}%s${O} on ${C}6${B}%s${O} [%u/%u] (${C}3wz ${B}%s${O}) at %s", $_->{name}, $_->{hostname}, $_->{mapname}, $_->{players}, $_->{maxPlayers}, $_->{'version'}, $_->{host}} @$dat;
                             }
                         }else{
                             $str="${C}5Error: $dat";
