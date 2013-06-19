@@ -118,6 +118,7 @@ sub getData {
                             });
                         });
                     }else {
+                        $self->{socket}->on_error($self->{_err});
                         $self->debug(Dump(\@games));
                         $cv->send(\@games);
                     }
@@ -174,6 +175,16 @@ sub getData {
                 });
             }
         };
+        $self->{socket}->on_error(sub {
+            my ($hdl,$ftl,$msg)=@_;
+            print "WZLobby: [caught] handle error $msg\n";
+            $hdl->destroy;
+            $self->{socket}=undef;
+            $self->{socket}->on_error($self->{_err});
+            $self->getData()->cb(sub{
+                $cv->send($_[0]->recv);
+            });
+        });
         $self->{socket}->push_read(chunk => $preflen, $ng);
     }
     return $cv;
@@ -220,18 +231,16 @@ sub reconnect {
         tcp_connect("lobby.wz2100.net",9990,sub {
             return if $self->{die};
             $self->debug("Socket connected");
+            $self->{_err}=sub {
+                my ($hdl,$ftl,$msg)=@_;
+                print "WZLobby: handle error $msg\n";
+                $hdl->destroy;
+                $self->{socket}=undef;
+                $cv->send($msg);
+            };
             my $sock=new AnyEvent::Handle(
                 fh => $_[0],
-                on_error => sub {
-                    my ($hdl,$ftl,$msg)=@_;
-                    print "WZLobby: handle error $msg\n";
-                    $hdl->destroy;
-                    $self->{socket}=undef;
-                    #$cv->send($msg);
-                    $self->reconnect()->cb(sub {
-                        $cv->send($_[0]->recv);
-                    });
-                },
+                on_error => $self->{_err},
                 autocork => 1,
                 no_delay => 1,
                 keepalive => 1
