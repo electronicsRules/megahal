@@ -180,7 +180,6 @@ sub getData {
             print "WZLobby: [caught] handle error $msg\n";
             $hdl->destroy;
             $self->{socket}=undef;
-            $self->{socket}->on_error($self->{_err});
             $self->getData()->cb(sub{
                 $cv->send($_[0]->recv);
             });
