@@ -10,7 +10,7 @@ use feature 'switch';
 
 sub new {
     my ($class, $serv) = @_;
-    my $self = { 'chans' => {}, 'bl' => [], 'timers' => [], 'socket' => undef, 'socket_busy' => 0, 'debug' => 0, 'die' => 0, 'n_reconnect' => 0 };
+    my $self = { 'chans' => {}, 'chantimer' => {}, 'bl' => [], 'timers' => [], 'socket' => undef, 'socket_busy' => 0, 'debug' => 0, 'die' => 0, 'n_reconnect' => 0 };
     $serv->reg_cb(
         'publicmsg' => sub {
             my ($this,  $nick, $ircmsg) = @_;
@@ -21,7 +21,7 @@ sub new {
             my $mstr    = join '', keys %{$modes};
             return if $command ne 'PRIVMSG' or $this->is_my_nick($nick);
             if ($self->{'chans'}->{ lc($chan) }) {
-                if (!(hmatch($self->{'bl'}, $nick, $ident)) && $message=~/#!wz/) {
+                if (!(hmatch($self->{'bl'}, $nick, $ident)) && $message=~/^#!wz/) {
                     my ($B, $C, $U, $O, $V) = ("\cB", "\cC", "\c_", "\cO", "\cV");
                     #$self->{n_reconnect}-- if $self->{n_reconnect} > 0;
                     my $cv=$self->getData();
