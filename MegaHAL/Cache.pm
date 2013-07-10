@@ -12,6 +12,7 @@ our @EXPORT_OK = qw(cache_http);
 #    'namespace' => 'megahal:'
 #);
 our %ds;
+our $DEBUG=0;
 our $cache = CHI->new(
     driver   => 'Memcached',
     servers  => ['/tmp/memcached.sock'],
@@ -66,7 +67,7 @@ sub cache_http {
     my $val = $cache->get('http:' . $key);
     EV::run EV::RUN_NOWAIT;
     if (defined $val) {
-        print "Cache hit $key!\n";
+        print "Cache hit $key!\n" if $DEBUG;
         local $@;
         local $!;
         eval { $sub->($val); };
@@ -77,6 +78,7 @@ sub cache_http {
             warn "Error in cache callback: $!\n";
         }
     } else {
+        print "Cache miss [$key]: $url\n" if $DEBUG;
         if ((AnyEvent->now() - $lreq) >= $dreqi) {
             AnyEvent::HTTP::http_get $url, sub {
                 my $r;

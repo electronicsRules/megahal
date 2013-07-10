@@ -61,7 +61,7 @@ sub new {
                     when (m`^(?:[^.]+\.)?fimfiction.net\/story\/(\d+)`) {
                         if ($self->{'chans'}->{$chan}->{'fimfic'} and $_ !~ /#comment\/\d+$/) {
                             cache_http(
-                                'http://fimfiction.net/api/story.php?story=' . $_,
+                                'http://fimfiction.net/api/story.php?story=' . $url,
                                 "fimfic:$1",
                                 60 * 30,
                                 sub {
