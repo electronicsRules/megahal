@@ -40,7 +40,8 @@ our $delreqt = AnyEvent->timer(
 );
 
 sub cache_http {
-    my ($url, $key, $expire, $sub) = @_;
+    my ($url, $key, $expire, $sub, $_fut) = @_;
+    return if $_fut and $_fut->is_cancelled;
     if (!$key) {
         $key = $url;
         $key =~ s#^https?://##;
@@ -72,38 +73,43 @@ sub cache_http {
         print "Cache hit $key!\n" if $DEBUG;
         local $@;
         local $!;
-        eval { $sub->($val); };
-        if ($@) {
-            warn "Error in cache callback: $@\n";
+        my $fut=new Future;
+        $fut->done();
+        if ($sub) {
+            eval { $sub->($val); };
+            if ($@) {
+                warn "Error in cache callback: $@\n";
+            }
+            if ($!) {
+                warn "Error in cache callback: $!\n";
+            }
         }
-        if ($!) {
-            warn "Error in cache callback: $!\n";
-        }
+        return $fut;
     } else {
         print "Cache miss [$key]: $url\n" if $DEBUG;
         if ((AnyEvent->now() - $lreq) >= $dreqi) {
-            my $cv = $http->request($url);
-            $cv->cb(
-                sub {
-                    my $r;
-                    eval { $r = $sub->($_[0]->recv) };
-                    if ($@) {
-                        warn "Error in cache callback: $@\n";
-                    }
-                    if ($!) {
-                        warn "Error in cache callback: $!\n";
-                    }
-                    if ($r) {
-                        EV::run EV::RUN_NOWAIT;
-                        if (!ref(($_[0]->recv())[0])) {
-                            $cache->set('http:' . $key, ($_[0]->recv())[0], $expire || 60 * 60 * 15);
-                        }
-                    }
-                }
-            );
             $lreq = time;
+            my $fut=$http->request($url);
+            $fut->on_done(sub {
+                my $r;
+                eval { $r = $sub->($_[0]) };
+                if ($@) {
+                    warn "Error in cache callback: $@\n";
+                }
+                if ($!) {
+                    warn "Error in cache callback: $!\n";
+                }
+                if ($r) {
+                    EV::run EV::RUN_NOWAIT;
+                    $cache->set('http:' . $key, ($_[0])[0], $expire || 60 * 60 * 15);
+                }
+            }) if $sub;
+            $fut->on_ready($_fut) if $_fut; #trickery for the delayed requests.
+            return $fut;
         } else {
-            push @delayedreq, [ $url, $key, $expire, $sub ];
+            my $fut=new Future;
+            push @delayedreq, [ $url, $key, $expire, $sub, $fut ];
+            return $fut;
         }
     }
 #=cut

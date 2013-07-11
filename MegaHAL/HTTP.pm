@@ -20,20 +20,16 @@ sub new {
 sub request {
     my ($self, $uri) = @_;
     $uri = URI->new($uri) unless ref $uri;
-    my $cv = AnyEvent->condvar;
-    $self->{http}->do_request(
+    my $fut=$self->{http}->do_request(
         request => ($uri->isa('HTTP::Request') ? $uri : undef),
         uri     => ($uri->isa('URI')           ? $uri : undef),
-        timeout => 15,
-        on_response => sub {
-            $cv->send($_[0]->decoded_content(), $_[0]);
-        },
-        on_error => sub {
-            warn "Error in MegaHAL::HTTP: '$_[0]'\n";
-            $cv->send(\$_[0], \$_[1]);
-        }
+        timeout => 15
     );
-    return $cv;
+    return $fut->on_fail(sub {
+		warn "Error in MegaHAL::HTTP: '$_[0]'\n";
+	})->transform(done => sub {
+		return($_[0]->decoded_content,$_[0]);
+	});
 }
 
 sub DESTROY {

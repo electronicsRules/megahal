@@ -20,6 +20,7 @@ sub new {
         'session'  => {},
         'lastmsg'  => 0,
         'msgcache' => [],
+        'features' => {}
       ##'scap' => {}
     };
     bless $self, $class;
@@ -260,7 +261,7 @@ sub connect {
                         my $tmr = AnyEvent->timer(
                             after => 15,
                             cb    => sub {
-                                if (!$self->{'auth_ok'}) {
+                                if ($self->{'auth_ok'} == 0) {
                                     $self->{'auth_ok'} = -1;
                                     warn "[$$self{name}] NickServ auth failed!\n";
                                     $self->call_hook('auth_fail');
@@ -385,64 +386,109 @@ sub connect {
             }
         }
     );
-    $self->{'con'}->reg_cb(
-        irc_307 => sub {
-            my ($this, $msg) = @_;
-            my $sysmsg = $msg->{params}->[-1];
-            my $nick   = $msg->{params}->[-2];
-            if ((substr $self->{'session'}->{$nick}->{'status'}, 0, length('waiting')) eq 'waiting') {
-                if ((time - $self->{'session'}->{$nick}->{'ts'}) < 30) {
-                    my $new = substr $self->{'session'}->{$nick}->{'status'}, length('waiting_');
-                    $self->{'session'}->{$nick}->{'status'} = $new;
-                    print "[$$self{name}] NickServ authentication OK for $nick\n";
-                    $_->done() foreach @{ $self->{'session'}->{$nick}->{'cb'} };
-                    delete $self->{'session'}->{'cb'};
-                } else {
-                    print "[$$self{name}] Recieved VERY LATE (>30sec) WHOIS 307 numeric for $nick, ignoring!\n";
-                    $self->send_srv('NOTICE' => $nick, "NickServ authentication timed out.");
-                    $_->fail("Timed out",1) foreach @{ $self->{'session'}->{$nick}->{'cb'} };
-                    delete $self->{'session'}->{$nick};
+    if ($self->{'userauth'} eq 'nickserv') {
+        $self->{'con'}->reg_cb(
+            irc_307 => sub {
+                my ($this, $msg) = @_;
+                my $sysmsg = $msg->{params}->[-1];
+                my $nick   = $msg->{params}->[-2];
+                if ((substr $self->{'session'}->{$nick}->{'status'}, 0, length('waiting')) eq 'waiting') {
+                    if ((time - $self->{'session'}->{$nick}->{'ts'}) < 30) {
+                        my $new = substr $self->{'session'}->{$nick}->{'status'}, length('waiting_');
+                        $self->{'session'}->{$nick}->{'status'} = $new;
+                        print "[$$self{name}] NickServ authentication OK for $nick\n";
+                        $_->done() foreach @{ $self->{'session'}->{$nick}->{'cb'} };
+                        delete $self->{'session'}->{'cb'};
+                    } else {
+                        print "[$$self{name}] Recieved VERY LATE (>30sec) WHOIS 307 numeric for $nick, ignoring!\n";
+                        $self->send_srv('NOTICE' => $nick, "NickServ authentication timed out.");
+                        $_->fail("Timed out",1) foreach @{ $self->{'session'}->{$nick}->{'cb'} };
+                        delete $self->{'session'}->{$nick};
+                    }
                 }
             }
-        }
-    );
-    $self->{'con'}->reg_cb(
-        irc_330 => sub {
-            my ($this, $msg) = @_;
-            my $sysmsg = $msg->{params}->[-1];
-            my $nick   = $msg->{params}->[-3];
-            my $nsnick = $msg->{params}->[-2];
-            if ((substr $self->{'session'}->{$nick}->{'status'}, 0, length('waiting')) eq 'waiting') {
-                if ((time - $self->{'session'}->{$nick}->{'ts'}) < 30) {
-                    my $new = substr $self->{'session'}->{$nick}->{'status'}, length('waiting_');
-                    $self->{'session'}->{$nick}->{'status'} = $new;
-                    $self->{'session'}->{$nick}->{'nsnick'} = $nsnick;
-                    $self->send_srv('NOTICE' => $nick, "NickServ authentication OK");
-                    print "[$$self{name}] NickServ authentication OK for $nick\n";
-                    $_->(1) foreach @{ $self->{'session'}->{$nick}->{'cb'} };
-                    delete $self->{'session'}->{'cb'};
-                } else {
-                    print "[$$self{name}] Recieved VERY LATE (>30sec) WHOIS 330 numeric for $nick, ignoring!\n";
-                    $self->send_srv('NOTICE' => $nick, "NickServ authentication timed out.");
-                    $_->fail("Timed out",1) foreach @{ $self->{'session'}->{$nick}->{'cb'} };
-                    delete $self->{'session'}->{$nick};
+        );
+        $self->{'con'}->reg_cb(
+            irc_330 => sub {
+                my ($this, $msg) = @_;
+                my $sysmsg = $msg->{params}->[-1];
+                my $nick   = $msg->{params}->[-3];
+                my $nsnick = $msg->{params}->[-2];
+                if ((substr $self->{'session'}->{$nick}->{'status'}, 0, length('waiting')) eq 'waiting') {
+                    if ((time - $self->{'session'}->{$nick}->{'ts'}) < 30) {
+                        my $new = substr $self->{'session'}->{$nick}->{'status'}, length('waiting_');
+                        $self->{'session'}->{$nick}->{'status'} = $new;
+                        $self->{'session'}->{$nick}->{'nsnick'} = $nsnick;
+                        $self->send_srv('NOTICE' => $nick, "NickServ authentication OK");
+                        print "[$$self{name}] NickServ authentication OK for $nick\n";
+                        $_->(1) foreach @{ $self->{'session'}->{$nick}->{'cb'} };
+                        delete $self->{'session'}->{'cb'};
+                    } else {
+                        print "[$$self{name}] Recieved VERY LATE (>30sec) WHOIS 330 numeric for $nick, ignoring!\n";
+                        $self->send_srv('NOTICE' => $nick, "NickServ authentication timed out.");
+                        $_->fail("Timed out",1) foreach @{ $self->{'session'}->{$nick}->{'cb'} };
+                        delete $self->{'session'}->{$nick};
+                    }
                 }
             }
-        }
-    );
-    $self->{'con'}->reg_cb(
-        irc_318 => sub {
-            my ($this, $msg) = @_;
-            my $nick = $msg->{params}->[-2];
-            if ((substr $self->{'session'}->{$nick}->{'status'}, 0, length('waiting')) eq 'waiting') {
-                delete $self->{'session'}->{$nick};
-                print "[$$self{name}] NickServ authentication for $nick failed\n";
-                $_->fail("Authentication failed!",0) foreach @{ $self->{'session'}->{$nick}->{'cb'} };
-                $self->send_srv('NOTICE' => $nick, "\cB\cC4NickServ authentication failed!\cO");
+        );
+        $self->{'con'}->reg_cb(
+            irc_318 => sub {
+                my ($this, $msg) = @_;
+                my $nick = $msg->{params}->[-2];
+                if ((substr $self->{'session'}->{$nick}->{'status'}, 0, length('waiting')) eq 'waiting') {
+                    delete $self->{'session'}->{$nick};
+                    print "[$$self{name}] NickServ authentication for $nick failed\n";
+                    $_->fail("Authentication failed!",0) foreach @{ $self->{'session'}->{$nick}->{'cb'} };
+                    $self->send_srv('NOTICE' => $nick, "\cB\cC4NickServ authentication failed!\cO");
+                }
             }
-        }
-    );
+        );
+    }
     return $ret;
+}
+
+sub probe {
+    my ($self, $feature, $recheck) = @_;
+    my $fut=new Future;
+    if (!$recheck && $self->{features}->{$feature} && ($self->{features}->{$feature}->{ts} > time)) {
+        my $res=defined($self->{features}->{$feature}->{status}) ? $self->{features}->{$feature}->{status} : 1;
+        $fut->done($res) if $res;
+        $fut->fail($self->{features}->{$feature}->{error}) if not $res;
+    }else{
+        given($feature) {
+            when('nickserv') {
+                print "[$$self{name}] Probing NickServ...\n";
+                my @reg;
+                push @reg,$self->{'con'}->reg_cb(irc_421 => sub { #fail
+                    $self->{features}->{$feature}={
+                        status => 0,
+                        error => "NickServ not found!\n",
+                        ts => time+60*15 #try again in 15 minutes
+                    };
+                    warn "[$$self{name}] NickServ not found!\n";
+                    $fut->fail("NickServ not found!");
+                });
+                push @reg,$self->{'con'}->reg_cb(ctcp_notice => sub { #OK
+                    $self->{features}->{$feature}={
+                        status => 1,
+                        ts => time+3*60*60 #check again in 3 hours
+                    };
+                    print "[$$self{name}] NickServ found!\n";
+                    $fut->done(1);
+                });
+                $fut->on_ready(sub {
+                    $self->{'con'}->unreg_cb($_) foreach @reg;
+                });
+                $self->send_srv('NICKSERV' => 'INFO',$self->{'nick'});
+            }
+            default {
+                warn "[$$self{name}] UNKNOWN PROBE: $feature\n";
+                $fut->fail("UNKNOWN PROBE: '$feature'");
+            }
+        }
+    }
+    return $fut;
 }
 
 sub common_chans {
@@ -458,46 +504,53 @@ sub common_chans {
 
 sub auth {
     my ($self, $nick, $chan, $cb) = @_;
-    my $fut=new Future;
-    $fut->on_ready($cb) if $cb;
-    return $fut->done(1) if $self->{userauth} eq 'always';
-    if ($self->{'session'}->{$nick}) {    # 2 minute session timeout
-        if ($self->{'session'}->{$nick}->{'status'} eq 'auth' and ((time - $self->{'session'}->{$nick}->{'ts'}) < 120)) {
-            $self->{'session'}->{$nick}->{'ts'} = time;
-            return $fut->done(1);
-        } elsif ($self->{'session'}->{$nick}->{'status'} ne 'chanauth' and (time - $self->{'session'}->{$nick}->{'ts'}) > 120) {
-            delete $self->{'session'}->{$nick};
-            return $fut->fail("Session timed out",1);
-        } elsif ($self->{'session'}->{$nick}->{'status'} eq 'chanauth') {
-            return $fut->done(1);
-        } elsif ((substr $self->{'session'}->{$nick}->{'status'}, 0, length('waiting')) eq 'waiting') {
-            push @{ $self->{'session'}->{$nick}->{'cb'} }, $fut;
-            return $fut;
-        } else {
-            print "[$$self{name}] Unknown session state for $nick: " . ($self->{'session'}->{$nick}->{'status'});
-            return $fut->fail("Unknown session state!",0);
-        }
-    } else {
-        my $chans = $self->channel_list();
-        my $n = scalar(grep { $_ eq $nick } map { keys %$_ } values %$chans);
-        if ($n > 0) {    #At least one common channel
-            $self->{'session'}->{$nick} = {
-                'ts'       => time,
-                'status'   => 'waiting_chanauth',
-                'channels' => $n,
-                'cb'       => [$fut]
-            };
-            print "Chanauth for $nick in progress...\n";
-        } else {
-            $self->{'session'}->{$nick} = {
-                'ts'     => time,
-                'status' => 'waiting_auth',
-                'cb'     => [$fut]
-            };
-            print "Sessionauth for $nick in progress...\n";
-        }
-        $self->send_srv('WHOIS' => $nick);
-        return $fut;
+    if ($self->{userauth} eq 'always') {
+        my $fut=new Future;
+        $fut->on_ready($cb) if $cb;
+        return $fut->done(1);
+    }elsif ($self->{userauth} eq 'nickserv') {
+        $self->probe('nickserv')->and_then(sub {
+            my $fut=new Future;
+            $fut->on_ready($cb) if $cb;
+            if ($self->{'session'}->{$nick}) {    # 2 minute session timeout
+                if ($self->{'session'}->{$nick}->{'status'} eq 'auth' and ((time - $self->{'session'}->{$nick}->{'ts'}) < 120)) {
+                    $self->{'session'}->{$nick}->{'ts'} = time;
+                    return $fut->done(1);
+                } elsif ($self->{'session'}->{$nick}->{'status'} ne 'chanauth' and (time - $self->{'session'}->{$nick}->{'ts'}) > 120) {
+                    delete $self->{'session'}->{$nick};
+                    return $fut->fail("Session timed out",1);
+                } elsif ($self->{'session'}->{$nick}->{'status'} eq 'chanauth') {
+                    return $fut->done(1);
+                } elsif ((substr $self->{'session'}->{$nick}->{'status'}, 0, length('waiting')) eq 'waiting') {
+                    push @{ $self->{'session'}->{$nick}->{'cb'} }, $fut;
+                    return $fut;
+                } else {
+                    print "[$$self{name}] Unknown session state for $nick: " . ($self->{'session'}->{$nick}->{'status'});
+                    return $fut->fail("Unknown session state!",0);
+                }
+            } else {
+                my $chans = $self->channel_list();
+                my $n = scalar(grep { $_ eq $nick } map { keys %$_ } values %$chans);
+                if ($n > 0) {    #At least one common channel
+                    $self->{'session'}->{$nick} = {
+                        'ts'       => time,
+                        'status'   => 'waiting_chanauth',
+                        'channels' => $n,
+                        'cb'       => [$fut]
+                    };
+                    print "Chanauth for $nick in progress...\n";
+                } else {
+                    $self->{'session'}->{$nick} = {
+                        'ts'     => time,
+                        'status' => 'waiting_auth',
+                        'cb'     => [$fut]
+                    };
+                    print "Sessionauth for $nick in progress...\n";
+                }
+                $self->send_srv('WHOIS' => $nick);
+                return $fut;
+            }
+        });
     }
 }
 

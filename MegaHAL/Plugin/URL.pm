@@ -55,7 +55,9 @@ sub new {
                                     $serv->msg($chan, (sprintf("%s%s${C}12${B}%s${O} by ${C}3${B}%s${O} [${C}6%s${O}]", $prefix, $favme, $o->{'title'}, $o->{'author_name'}, $o->{'category'})));
                                     return 1;
                                 }
-                            );
+                            )->on_fail(sub {
+                                $serv->msg($chan, (sprintf("%s ERROR:\cC4%s",$prefix,$_[0])));
+                            });
                         }
                     }
                     when (m`^(?:[^.]+\.)?fimfiction.net\/story\/(\d+)`) {
@@ -119,7 +121,9 @@ sub new {
                                     $serv->msg($chan, $oa);
                                     return 1;
                                 }
-                            );
+                            )->on_fail(sub {
+                                $serv->msg($chan, (sprintf("%s ERROR:\cC4%s",$prefix,$_[0])));
+                            });;
                         }
                     }
                     when (m`^(?:www\.)?derpiboo(?:(?:\.ru)|(?:ru\.org))/(\d+)(?:\?.*)?$`) {
@@ -152,7 +156,9 @@ sub new {
                                     $serv->msg($chan, (sprintf("%s#%s (%s x %s) by ${C}3${B}%s${O} [${C}3+%s${C}4-%s${O}] [${C}12%s${O}]", $prefix, $o->{'id_number'}, $o->{'width'}, $o->{'height'}, $o->{'uploader'}, $o->{'upvotes'}, $o->{'downvotes'}, $o->{'tags'})));
                                     return 1;
                                 }
-                            );
+                            )->on_fail(sub {
+                                $serv->msg($chan, (sprintf("%s ERROR:\cC4%s",$prefix,$_[0])));
+                            });;
                         }
                     }
                     when (m`^(?:www\.)?youtu(?:(?:be\.com)|(?:\.be))/`) {
@@ -198,7 +204,9 @@ sub new {
                                     $serv->msg($chan, $oa);
                                     return 1;
                                 }
-                            );
+                            )->on_fail(sub {
+                                $serv->msg($chan, (sprintf("%s ERROR:\cC4%s",$prefix,$_[0])));
+                            });
                         }
                     }
                     when (m`static\.fjcdn\.com`) {
