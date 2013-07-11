@@ -263,6 +263,7 @@ sub connect {
                                     $self->{'auth_ok'} = -1;
                                     warn "[$$self{name}] NickServ auth failed!\n";
                                     $self->call_hook('auth_fail');
+                                    $self->{'con'}->unreg_cb($grd);
                                 }
                             }
                         );
