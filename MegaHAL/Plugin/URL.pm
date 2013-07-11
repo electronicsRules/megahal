@@ -61,7 +61,7 @@ sub new {
                     when (m`^(?:[^.]+\.)?fimfiction.net\/story\/(\d+)`) {
                         if ($self->{'chans'}->{$chan}->{'fimfic'} and $_ !~ /#comment\/\d+$/) {
                             cache_http(
-                                'http://fimfiction.net/api/story.php?story=' . $url,
+                                'http://www.fimfiction.net/api/story.php?story=' . $1,
                                 "fimfic:$1",
                                 60 * 30,
                                 sub {
@@ -75,6 +75,8 @@ sub new {
                                         return 0;
                                     }
                                     if ($@) {
+                                        $serv->msg($chan, "${prefix}${C}4Internal error: " . $@);
+                                        print $data;
                                         print $@;
                                         return 0;
                                     }
@@ -108,7 +110,7 @@ sub new {
                                     chop $sfcl;
                                     my $oa = sprintf("%s${C}12${B}%s${O} by ${C}3${B}%s${O} [${C}6%s;%s;%sc;%sw;%sv${O}] [${C}6${B}%s${O}] [${C}3+%s${C}4-%s${O}] [%s] ", $prefix, $s->{'title'}, $s->{'author'}->{'name'}, $s->{'content_rating_text'}, $s->{'status'}, metric($s->{'chapter_count'}), metric($s->{'words'}), metric($s->{'total_views'}), time2str('%H%MGMT %d%b%y', $s->{'date_modified'}), metric($s->{'likes'}), metric($s->{'dislikes'}), $sfcl);
                                     #Ballpark guess... might be three lines every now and then
-                                    my $sdesc = shorten(remove_bbcode(decode_entities(($self->{'chans'}->{$chan}->{'fimfic'} =~ /sdesc/ ? $s->{'short_description'} : $s->{'description'}))));
+                                    my $sdesc = shorten(remove_bbcode(decode_entities((($n > 1 || $self->{'chans'}->{$chan}->{'fimfic'} =~ /sdesc/) ? $s->{'short_description'} : $s->{'description'}))));
                                     my $mlen = 841 - 15;
                                     if (length($sdesc) >= ($mlen - 5) - length($oa)) {
                                         $sdesc = substr($sdesc, 0, ($mlen - 5) - length($oa)) . '[...]';

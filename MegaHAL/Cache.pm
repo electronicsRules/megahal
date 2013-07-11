@@ -1,6 +1,7 @@
 package MegaHAL::Cache;
 use AnyEvent;
 use AnyEvent::HTTP;
+use MegaHAL::HTTP;
 use EV;
 #use AnyEvent::Memcached;
 #use Cache::Memcached;
@@ -13,6 +14,7 @@ our @EXPORT_OK = qw(cache_http);
 #);
 our %ds;
 our $DEBUG=0;
+our $http=MegaHAL::HTTP->new();
 our $cache = CHI->new(
     driver   => 'Memcached',
     servers  => ['/tmp/memcached.sock'],
@@ -80,9 +82,10 @@ sub cache_http {
     } else {
         print "Cache miss [$key]: $url\n" if $DEBUG;
         if ((AnyEvent->now() - $lreq) >= $dreqi) {
-            AnyEvent::HTTP::http_get $url, sub {
+            my $cv = $http->request($url);
+            $cv->cb(sub {
                 my $r;
-                eval { $r = $sub->($_[0]) };
+                eval { $r = $sub->($_[0]->recv) };
                 if ($@) {
                     warn "Error in cache callback: $@\n";
                 }
@@ -91,9 +94,11 @@ sub cache_http {
                 }
                 if ($r) {
                     EV::run EV::RUN_NOWAIT;
-                    $cache->set('http:' . $key, $_[0], $expire || 60 * 60 * 15);
+                    if (!ref (($_[0]->recv())[0])) {
+                        $cache->set('http:' . $key, ($_[0]->recv())[0], $expire || 60 * 60 * 15);
+                    }
                 }
-            };
+            });
             $lreq = time;
         } else {
             push @delayedreq, [ $url, $key, $expire, $sub ];

@@ -1,4 +1,5 @@
 use feature 'switch';
+use lib '.';
 use utf8;
 use EV;
 use AnyEvent;
@@ -12,6 +13,7 @@ use MegaHAL::Filehandle;
 use MegaHAL::Server;
 use MegaHAL::Interface::Console;
 use MegaHAL::ACL;
+use MegaHAL::Cache;
 use Term::ANSIColor qw(colorstrip);
 use MegaHAL::Telnet;
 our $VERSION = '1.5';

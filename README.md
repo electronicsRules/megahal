@@ -11,6 +11,7 @@ Perl modules:
 - AnyEvent
 - AnyEvent::IRC
 - EV (AnyEvent does not provide EV::run EV::RUN_NOWAIT and a few other corner-case features - besides, EV is the fastest and most feature-complete event loop supported by AE.)
+- Net::Async::HTTP
 - YAML::Any (YAML::XS or YAML::Syck recommended)
 - AnyEvent::ReadLine::Gnu
 - Text::ParseWords
