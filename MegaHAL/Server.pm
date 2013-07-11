@@ -144,7 +144,7 @@ sub connect {
         if ($r != 0) {
             $ret = $r;
         }
-        delete $self->{'pldata'};
+        #delete $self->{'pldata'};
     }
     $self->{'con'}->reg_cb(
         connect => sub {
@@ -499,11 +499,13 @@ sub disconnect {
     if ((not $fast) and ($self->registered())) {
         print "Quitting...\n";
         $self->{'expect_dc'} = $cb;
+        $self->{'plugins'}->cleanup();
         $self->send_srv(QUIT => $msg);
         push @{ $self->{'timer'} }, AnyEvent->timer(
             after => 2,
             cb    => sub {
                 $self->{'expect_dc'} = undef;
+                $self->{'plugins'} = undef;
                 $self->disconnect($msg, 1, $cb);
             }
         );

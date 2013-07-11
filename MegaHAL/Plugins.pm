@@ -148,7 +148,7 @@ sub unload_plugin {
     {
         local $@;
         eval {
-            $self->{'plugins'}->{$plugin}->cleanup($self->{'serv'}) if $self->{'plugins'}->{$plugin}->can('cleanup');
+            $self->{'plugins'}->{$plugin}->cleanup($self->{'serv'}) if "MegaHAL::Plugin::$plugin"->can('cleanup');
             delete $self->{'plugins'}->{$plugin};
         };
         if ($@) {
@@ -237,5 +237,10 @@ sub load {
         }
     }
     return $ret ? $ret : 1;
+}
+
+sub cleanup {
+    my ($self)=@_;
+    $self->unload_plugin($_) foreach $self->list_plugins();
 }
 1;
