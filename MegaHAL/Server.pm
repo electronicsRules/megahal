@@ -248,7 +248,7 @@ sub connect {
                                 my ($this, $nick, $ircmsg) = @_;
                                 my $command = $ircmsg->{'command'};
                                 my $message = $ircmsg->{'params'}->[1];
-                                if ($nick eq $self->nick() && $message =~ /^You are now identified for /) {
+                                if ($nick eq $self->nick() && ($message =~ /^You are now identified for / || $message =~ /Password accepted/)) {
                                     $self->{'auth_ok'} = 1;
                                     print "[$$self{name}] NickServ auth OK\n";
                                     $self->call_hook('auth_ok');
