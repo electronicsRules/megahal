@@ -236,7 +236,7 @@ sub load {
             $ret->[1] = $r->[1] . "\n";
         }
     }
-    return $ret ? $ret : 1;
+    return $ret ? $ret : 0;
 }
 
 sub cleanup {

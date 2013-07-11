@@ -134,7 +134,7 @@ sub reg_cb {
 
 sub connect {
     my ($self) = @_;
-    my $ret;
+    my $ret=0;
     $self->{'con'} = AnyEvent::IRC::Client->new(send_initial_whois => 1);
     $self->{'plugins'} = MegaHAL::Plugins->new($self);
     $self->{'plugins'}->new_hook($_) foreach qw(auth_ok auth_fail connecting connect disconnect reconnect pingTimeout consoleCommand iConsoleCommand stdout stderr tick publicaction);
@@ -244,33 +244,40 @@ sub connect {
             if ($self->{'auth'} && $self->{'authpw'}) {
                 given ($self->{'auth'}) {
                     when ('nickserv') {
-                        $self->{'auth_ok'} = 0;
-                        my $grd = $self->{'con'}->reg_cb(
-                            privatemsg => sub {
-                                my ($this, $nick, $ircmsg) = @_;
-                                my $command = $ircmsg->{'command'};
-                                my $message = $ircmsg->{'params'}->[1];
-                                if ($nick eq $self->nick() && ($message =~ /^You are now identified for / || $message =~ /Password accepted/)) {
-                                    $self->{'auth_ok'} = 1;
-                                    print "[$$self{name}] NickServ auth OK\n";
-                                    $self->call_hook('auth_ok');
-                                    $this->unreg_me;
+                        $self->probe('nickserv')->on_done(sub {
+                            $self->{'auth_ok'} = 0;
+                            my $grd = $self->{'con'}->reg_cb(
+                                privatemsg => sub {
+                                    my ($this, $nick, $ircmsg) = @_;
+                                    my $command = $ircmsg->{'command'};
+                                    my $message = $ircmsg->{'params'}->[1];
+                                    if ($nick eq $self->nick() && ($message =~ /^You are now identified for / || $message =~ /Password accepted/)) {
+                                        $self->{'auth_ok'} = 1;
+                                        print "[$$self{name}] NickServ auth OK\n";
+                                        $self->call_hook('auth_ok');
+                                        $this->unreg_me;
+                                    }
                                 }
-                            }
-                        );
-                        my $tmr = AnyEvent->timer(
-                            after => 15,
-                            cb    => sub {
-                                if ($self->{'auth_ok'} == 0) {
-                                    $self->{'auth_ok'} = -1;
-                                    warn "[$$self{name}] NickServ auth failed!\n";
-                                    $self->call_hook('auth_fail');
-                                    $self->{'con'}->unreg_cb($grd);
+                            );
+                            my $tmr = AnyEvent->timer(
+                                after => 15,
+                                cb    => sub {
+                                    if ($self->{'auth_ok'} == 0) {
+                                        $self->{'auth_ok'} = -1;
+                                        warn "[$$self{name}] NickServ auth failed!\n";
+                                        $self->call_hook('auth_fail');
+                                    }
                                 }
-                            }
-                        );
-                        push @{ $self->{'timer'} }, $tmr;
-                        $self->send_msg('NS' => 'IDENTIFY', $self->{'authpw'});
+                            );
+                            push @{ $self->{'timer'} }, $tmr;
+                            $self->send_msg('NS' => 'IDENTIFY', $self->{'authpw'});
+                        })->on_error(sub {
+                            warn "[$$self{name}] No NickServ, can't identify!";
+                        });
+                    }
+                    when ('none') {
+                        $self->{'auth_ok'}=1;
+                        $self->call_hook('auth_ok');
                     }
                     default {
                         cluck "Unknown authentication method: ${$self->{'auth'}}\n";
@@ -566,8 +573,8 @@ sub disconnect {
         push @{ $self->{'timer'} }, AnyEvent->timer(
             after => 2,
             cb    => sub {
-                $self->{'expect_dc'} = undef;
                 $self->{'plugins'} = undef;
+                $self->{'expect_dc'} = undef;
                 $self->disconnect($msg, 1, $cb);
             }
         );
@@ -588,10 +595,9 @@ sub save {
 sub load {
     my ($self, $data) = @_;
     $self->{$_} = $data->{$_} foreach qw(port ssl nick user real pass auth authpw reconnect ping ip oper extip);
+    $self->{'pldata'} = $data->{'plugins'};
     if ($self->{'con'}) {
         return $self->{'plugins'}->load($data->{'plugins'});
-    } else {
-        $self->{'pldata'} = $data->{'plugins'};
     }
 }
 
