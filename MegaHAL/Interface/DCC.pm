@@ -20,16 +20,19 @@ sub _write {
 sub colour { }
 
 sub _auth {
-    my ($self, $cb) = @_;
+    my ($self) = @_;
     return $self->{'nick'} if $self->{'auth'};
     return $main::srv{ $self->{'server'} }->auth(
         $self->{'nick'},
-        undef,
-        sub {
-            $self->{'auth'} = 1;
-            $cb->($self->{'nick'});
-        }
+        undef
     );
+    return $main::srv{ $self->{'server'} }->auth(
+        $self->{'nick'},
+        undef
+    )->transform(done => sub {
+        $self->{'auth'}=1;
+        return $self->{'nick'} if $_[0]
+    });
 }
 sub type   {"DCC"}
 sub atype  {'irc'}

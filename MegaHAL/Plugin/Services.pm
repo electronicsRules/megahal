@@ -19,8 +19,7 @@ sub new {
             #print "$nick joined $chan!\n";
             return if $is_myself;
             if ($self->{'chans'}->{$chan}->{$nick}->{'modes'}) {
-                $serv->auth(
-                    $nick, $chan,
+                $serv->auth($nick, $chan)->on_done(
                     sub {
                         $serv->send_srv(MODE => $chan, $_, $nick) foreach split //, $self->{'chans'}->{$chan}->{$nick}->{'modes'};
                     }
@@ -64,10 +63,7 @@ sub new {
             given ($cmd) {
                 when ('setmode') {
                     return if not $serv->is_channel_name($args[0]);
-                    $self->{'users'}->{$nick}->acan(
-                        'Services',
-                        'override',
-                        $args[0],
+                    $self->{'users'}->{$nick}->acan('Services', 'override', $args[0],)->on_done(
                         sub {
                             return unless $_[0] or $self->{'chans'}->{ $args[0] }->{$nick}->{'founder'};
                             return if not $_[0] and $self->{'chans'}->{ $args[0] }->{ $args[1] }->{'founder'};
@@ -82,10 +78,7 @@ sub new {
                 }
                 when ('listmode') {
                     return if not $serv->is_channel_name($args[0]);
-                    $self->{'users'}->{$nick}->acan(
-                        'Services',
-                        'override',
-                        $args[0],
+                    $self->{'users'}->{$nick}->acan('Services', 'override', $args[0])->on_done(
                         sub {
                             return unless $_[0] or $self->{'chans'}->{ $args[0] }->{$nick}->{'founder'};
                             my $str = join ", ", map { $_ . ' ' . $self->{'chans'}->{ $args[0] }->{$_}->{'modes'} } keys %{ $self->{'chans'}->{ $args[0] } };

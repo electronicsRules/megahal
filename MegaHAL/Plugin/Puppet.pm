@@ -25,25 +25,23 @@ sub new {
                     my $msg = join(' ', (splice @args, ($self->{'users'}->{$nick}->{'pchan'} ? 0 : 1)));
                     $self->{'users'}->{$nick}->acan(
                         'Puppet', 'say',
-                        $args[0],
-                        sub {
-                            return if not $_[0];
-                            $serv->msg($chan, $msg);
-                            print "$nick -> $chan: $msg\n";
-                        }
-                    );
+                        $args[0]
+                    )->on_done(sub {
+                        return if not $_[0];
+                        $serv->msg($chan, $msg);
+                        print "$nick -> $chan: $msg\n";
+                    });
                 }
                 when ('act') {
                     return unless $serv->is_channel_name($args[0]);
                     $self->{'users'}->{$nick}->acan(
                         'Puppet', 'act',
-                        $args[0],
-                        sub {
-                            return if not $_[0];
-                            $serv->msg($chan, ("\001ACTION $msg\001"));
-                            print "$nick -> $chan [ACTION]: $msg\n";
-                        }
-                    );
+                        $args[0]
+                    )->on_done(sub {
+                        return if not $_[0];
+                        $serv->msg($chan, ("\001ACTION $msg\001"));
+                        print "$nick -> $chan [ACTION]: $msg\n";
+                    });
                 }
                 when ('pchan') {
                     if ($args[0]) {

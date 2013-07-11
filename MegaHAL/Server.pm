@@ -394,10 +394,12 @@ sub connect {
                     my $new = substr $self->{'session'}->{$nick}->{'status'}, length('waiting_');
                     $self->{'session'}->{$nick}->{'status'} = $new;
                     print "[$$self{name}] NickServ authentication OK for $nick\n";
-                    $_->(1) foreach @{ $self->{'session'}->{$nick}->{'cb'} };
+                    $_->done() foreach @{ $self->{'session'}->{$nick}->{'cb'} };
                     delete $self->{'session'}->{'cb'};
                 } else {
                     print "[$$self{name}] Recieved VERY LATE (>30sec) WHOIS 307 numeric for $nick, ignoring!\n";
+                    $self->send_srv('NOTICE' => $nick, "NickServ authentication timed out.");
+                    $_->fail("Timed out",1) foreach @{ $self->{'session'}->{$nick}->{'cb'} };
                     delete $self->{'session'}->{$nick};
                 }
             }
@@ -421,6 +423,7 @@ sub connect {
                 } else {
                     print "[$$self{name}] Recieved VERY LATE (>30sec) WHOIS 330 numeric for $nick, ignoring!\n";
                     $self->send_srv('NOTICE' => $nick, "NickServ authentication timed out.");
+                    $_->fail("Timed out",1) foreach @{ $self->{'session'}->{$nick}->{'cb'} };
                     delete $self->{'session'}->{$nick};
                 }
             }
@@ -433,6 +436,7 @@ sub connect {
             if ((substr $self->{'session'}->{$nick}->{'status'}, 0, length('waiting')) eq 'waiting') {
                 delete $self->{'session'}->{$nick};
                 print "[$$self{name}] NickServ authentication for $nick failed\n";
+                $_->fail("Authentication failed!",0) foreach @{ $self->{'session'}->{$nick}->{'cb'} };
                 $self->send_srv('NOTICE' => $nick, "\cB\cC4NickServ authentication failed!\cO");
             }
         }
@@ -453,21 +457,23 @@ sub common_chans {
 
 sub auth {
     my ($self, $nick, $chan, $cb) = @_;
+    my $fut=new Future;
+    $fut->on_ready($cb) if $cb;
     if ($self->{'session'}->{$nick}) {    # 2 minute session timeout
         if ($self->{'session'}->{$nick}->{'status'} eq 'auth' and ((time - $self->{'session'}->{$nick}->{'ts'}) < 120)) {
             $self->{'session'}->{$nick}->{'ts'} = time;
-            return $cb->(1);
+            return $fut->done(1);
         } elsif ($self->{'session'}->{$nick}->{'status'} ne 'chanauth' and (time - $self->{'session'}->{$nick}->{'ts'}) > 120) {
             delete $self->{'session'}->{$nick};
-            return 0;
+            return $fut->fail("Session timed out",1);
         } elsif ($self->{'session'}->{$nick}->{'status'} eq 'chanauth') {
-            return $cb->(1);
+            return $fut->done(1);
         } elsif ((substr $self->{'session'}->{$nick}->{'status'}, 0, length('waiting')) eq 'waiting') {
-            push @{ $self->{'session'}->{$nick}->{'cb'} }, $cb;
-            return 0;
+            push @{ $self->{'session'}->{$nick}->{'cb'} }, $fut;
+            return $fut;
         } else {
             print "[$$self{name}] Unknown session state for $nick: " . ($self->{'session'}->{$nick}->{'status'});
-            return 0;
+            return $fut->fail("Unknown session state!",0);
         }
     } else {
         my $chans = $self->channel_list();
@@ -477,19 +483,19 @@ sub auth {
                 'ts'       => time,
                 'status'   => 'waiting_chanauth',
                 'channels' => $n,
-                'cb'       => [$cb]
+                'cb'       => [$fut]
             };
             print "Chanauth for $nick in progress...\n";
         } else {
             $self->{'session'}->{$nick} = {
                 'ts'     => time,
                 'status' => 'waiting_auth',
-                'cb'     => [$cb]
+                'cb'     => [$fut]
             };
             print "Sessionauth for $nick in progress...\n";
         }
         $self->send_srv('WHOIS' => $nick);
-        return 0;
+        return $fut;
     }
 }
 

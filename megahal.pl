@@ -5,6 +5,7 @@ use EV;
 use AnyEvent;
 use AnyEvent::IRC::Client;
 use AnyEvent::HTTP;
+use Future;
 use YAML::Any qw(LoadFile DumpFile Dump);
 use AnyEvent::ReadLine::Gnu;
 use Text::ParseWords;
@@ -19,10 +20,8 @@ use MegaHAL::Telnet;
 our $VERSION = '1.5';
 our @cmdt;
 our %opts;
-$opts{telnet}=1;
-GetOptions(\%opts,
-    'telnet!'
-);
+$opts{telnet} = 1;
+GetOptions(\%opts, 'telnet!');
 my $old_stdout;
 open($old_stdout, '>&STDOUT') or die "Can't dup STDOUT!\n";
 my $c = AnyEvent->condvar;
@@ -577,11 +576,19 @@ sub command {
             push @$nargs, (shift @$nscmd);
         }
         if (ref $subt->[2] eq 'CODE') {    #Command
-            unless ($blanket || $iface->acan($plugin, (join '.', (@$parents, $cmd)))) {
-                $iface->write("\cC4I'm sorry, but I can't let you do that.\n");
-                return -1;
-            }
-            $subt->[2]->($iface, @$nargs, @$nscmd);
+            $iface->acan($plugin, (join '.', (@$parents, $cmd)))->on_done(
+                sub {
+                    unless ($blanket || $_[0]) {
+                        $iface->write("\cC4I'm sorry, but I can't let you do that.\n");
+                        return -1;
+                    }
+                    $subt->[2]->($iface, @$nargs, @$nscmd);
+                }
+              )->on_fail(
+                sub {
+                    $iface->write("\cC4Authentication error: $_[0]\n");
+                }
+              );
             return 1;
         } elsif (ref $subt->[2] eq 'ARRAY') {    #Subtree
             return command($iface, $nscmd->[0], [ splice @$nscmd, 1 ], $nargs, $subt->[2], [ @$parents, $cmd ], $blanket, $plugin);

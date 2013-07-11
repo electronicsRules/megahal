@@ -41,30 +41,28 @@ sub atype       {'user'}
 
 sub acan {
     my ($self, $plugin, $node, $channel, $cb) = @_;
+    my $f;
     if ($self->atype() eq 'irc' && defined($self->{'server'})) {
-        return $self->auth(
-            sub {
+        $f = Future->needs_any($self->auth())->transform(
+            done => sub {
                 return 0 if not $_[0];
-                my $res = MegaHAL::ACL::has_ircnode($self->{'server'}, $_[0], $plugin, $node, $channel);
-                $cb->($res) if $cb;
-                return $res;
+                return MegaHAL::ACL::has_ircnode($self->{'server'}, $_[0], $plugin, $node, $channel);
             }
         );
     } elsif ($self->atype() eq 'user') {
-        return $self->auth(
-            sub {
+        $f = Future->needs_any($self->auth())->transform(
+            done => sub {
                 return 0 if not $_[0];
-                my $res = MegaHAL::ACL::has_node($_[0], $plugin, $node);
-                $cb->($res) if $cb;
-                return $res;
+                return MegaHAL::ACL::has_node($_[0], $plugin, $node);
             }
         );
     } elsif ($self->atype() eq 'always') {
-        $cb->(1) if $cb;
-        return 1;
+        $f->done(1);
     } else {
-        return 0;
+        $fut->fail("No authentication methods available!");
     }
+    $f->on_ready($cb) if $cb;
+    return $f;
 }
 
 sub colour {
@@ -80,12 +78,11 @@ sub colour {
 
 sub auth {
     my ($self, $cb) = @_;
-    my $ret = $self->_auth($cb);
-    if (defined($ret)) {
+    my $ret = $self->_auth();
+    if (!ref $ret) {
         return $cb->($ret) if $cb;
-        return $ret;
     }
-    return undef;
+    return $ret;
 }
 
 sub _auth {

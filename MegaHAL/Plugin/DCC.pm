@@ -15,8 +15,7 @@ sub new {
             my $mstr    = join '', keys %$modes;
             return if $command ne 'PRIVMSG';
             if ($message eq 'dcc') {
-                $serv->auth(
-                    $nick, undef,
+                $serv->auth($nick, undef)->on_done(
                     sub {
                         if ($_[0] && MegaHAL::ACL::has_ircnode($serv->name(), $nick, 'DCC', 'request', '')) {
                             my $id = $serv->dcc_initiate($nick, 'CHAT', 300, $serv->extip(), undef);
@@ -25,7 +24,11 @@ sub new {
                             $serv->send_long_message('utf8', 0, 'PRIVMSG' => $nick, ($_[0] ? 'ACL fail!' : 'NS auth fail!'));
                         }
                     }
-                );
+                  )->on_fail(
+                    sub {
+                        $serv->msg($nick, "\cC4Authentication error: $_[0]");
+                    }
+                  );
             }
         }
     );

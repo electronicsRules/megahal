@@ -18,14 +18,8 @@ sub _write {
 sub colour { }
 
 sub _auth {
-    my ($self, $cb) = @_;
-    return $main::srv{ $self->{'server'} }->auth(
-        $self->{'nick'},
-        undef,
-        sub {
-            $cb->($self->{'nick'});
-        }
-    );
+    my ($self) = @_;
+    return $main::srv{ $self->{'server'} }->auth($self->{'nick'}, undef)->transform(done => sub { return $self->{'nick'} if $_[0] });
 }
 sub type   {"PM"}
 sub atype  {'irc'}
