@@ -81,7 +81,8 @@ sub new {
     return bless $self, $class;
 }
 
-sub cleanup {
+sub DESTROY {
     my ($self, $serv) = @_;
+    $serv->send_dcc_chat($_, "MegaHAL DCC plugin is being unloaded or reloaded. Contact your administrator for more information. Your session has been terminated. Goodbye.") foreach keys %{ $self->{'i'} };
     $serv->dcc_disconnect($_, "DCC plugin unloaded!") foreach keys %{ $self->{'i'} };
 }

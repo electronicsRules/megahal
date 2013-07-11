@@ -39,7 +39,8 @@ sub new {
         'ping'      => 60,
         'oper'      => '',
         'ip'        => undef,
-        'extip'     => undef
+        'extip'     => undef,
+        'userauth'  => 'nickserv'
     );
     $self->{$_} = defined($opt->{$_}) ? $opt->{$_} : $def{$_} foreach keys %def;
     $self->{'dc'}        = \(undef);
@@ -459,6 +460,7 @@ sub auth {
     my ($self, $nick, $chan, $cb) = @_;
     my $fut=new Future;
     $fut->on_ready($cb) if $cb;
+    return $fut->done(1) if $self->{userauth} eq 'always';
     if ($self->{'session'}->{$nick}) {    # 2 minute session timeout
         if ($self->{'session'}->{$nick}->{'status'} eq 'auth' and ((time - $self->{'session'}->{$nick}->{'ts'}) < 120)) {
             $self->{'session'}->{$nick}->{'ts'} = time;

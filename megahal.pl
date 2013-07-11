@@ -322,7 +322,7 @@ our $default = \('_default');
                 '',
                 sub {
                     $i = shift @_;
-                    my %o = a2h(qw(port ssl nick pass auth authpw ip oper reconnect ping extip));
+                    my %o = a2h(qw(port ssl nick pass auth authpw ip oper reconnect ping extip userauth));
                     if ($o{ $_[1] }) {
                         $i->write("[$_[0]] Set $_[1] to $_[2]\n");
                         $srv{ $_[0] }->{ $_[1] } = $_[2];

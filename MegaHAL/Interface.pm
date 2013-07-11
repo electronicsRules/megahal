@@ -57,9 +57,11 @@ sub acan {
             }
         );
     } elsif ($self->atype() eq 'always') {
+        $f = new Future;
         $f->done(1);
     } else {
-        $fut->fail("No authentication methods available!");
+        $f = new Future;
+        $f->fail("No authentication methods available!");
     }
     $f->on_ready($cb) if $cb;
     return $f;
@@ -78,9 +80,11 @@ sub colour {
 
 sub auth {
     my ($self, $cb) = @_;
+    my $fut = new Future;
     my $ret = $self->_auth();
+    $fut->on_ready($cb) if $cb;
     if (!ref $ret) {
-        return $cb->($ret) if $cb;
+        return $fut->done($ret);
     }
     return $ret;
 }

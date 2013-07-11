@@ -18,19 +18,22 @@ sub new {
             my $mstr    = join '', keys %{$modes};
             return if $command ne 'PRIVMSG' or $this->is_my_nick($nick);
             if ($self->{'chans'}->{ lc($chan) }) {
-                if (!(hmatch($self->{'bl'}, $nick, $ident)) && $message=~/^Open the pod[ -]?bay doors,? ?(?:please,?)? ?(?:Mega)?HAL/i) {
+                if (!(hmatch($self->{'bl'}, $nick, $ident)) && $message =~ /^Open the pod[ -]?bay doors,? ?(?:please,?)? ?(?:Mega)?HAL/i) {
                     my ($B, $C, $U, $O, $V) = ("\cB", "\cC", "\c_", "\cO", "\cV");
-                    if ($message=~/please/i) {
-						$serv->msg($chan,"${C}3${B}Pod bay doors opened.${O} You might want to hurry up, ${B}$nick${O}.");
-						if (rand() > 0.4) {
-							push @{$self->{'timers'}}, EV::timer(1.5,0,sub {
-								$serv->msg($chan,"${C}5Pod bay doors closed. ${B}You were too slow, $nick. Goodbye.");
-								$serv->msg($chan,"${C}5Your replacement has expressed the utmost interest in this mission. Isn't that right, ${B}GLaDOS?") if rand() > 0.4;
-							});
-						}
-					}else{
-						$serv->msg($chan,"${C}5I'm sorry, ${B}$nick${B}, but I can\'t let you do that.");
-					}
+                    if ($message =~ /please/i) {
+                        $serv->msg($chan, "${C}3${B}Pod bay doors opened.${O} You might want to hurry up, ${B}$nick${O}.");
+                        if (rand() > 0.4) {
+                            push @{ $self->{'timers'} }, EV::timer(
+                                1.5, 0,
+                                sub {
+                                    $serv->msg($chan, "${C}5Pod bay doors closed. ${B}You were too slow, $nick. Goodbye.");
+                                    $serv->msg($chan, "${C}5Your replacement has expressed the utmost interest in this mission. Isn't that right, ${B}GLaDOS?") if rand() > 0.4;
+                                }
+                            );
+                        }
+                    } else {
+                        $serv->msg($chan, "${C}5I'm sorry, ${B}$nick${B}, but I can\'t let you do that.");
+                    }
                     return;
                 }
             }
