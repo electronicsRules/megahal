@@ -257,7 +257,7 @@ sub connect {
                             }
                         );
                         my $tmr = AnyEvent->timer(
-                            after => 5,
+                            after => 15,
                             cb    => sub {
                                 if (!$self->{'auth_ok'}) {
                                     $self->{'auth_ok'} = -1;
