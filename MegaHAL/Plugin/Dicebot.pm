@@ -16,11 +16,12 @@ sub new {
             my $mstr    = join '', keys %{$modes};
             return if $command ne 'PRIVMSG' or $this->is_my_nick($nick);
             if ($self->{'chans'}->{ lc($chan) }) {
-                if (!(hmatch($self->{'bl'}, $nick, $ident)) && $message =~ /^!\d+d\d+/) {
+                if (!(hmatch($self->{'bl'}, $nick, $ident)) && $message =~ /^!\d+d(?:\d+|%)(?:[+-]\d+)?$/) {
                     my ($B, $C, $U, $O, $V) = ("\cB", "\cC", "\c_", "\cO", "\cV");
-                    $message =~ /^!(\d+)d(\d+)/;
-                    my ($n,$s)=($1,$2);
-					my $repl = "Roll: ".(join ', ',map {int(1+rand() * $s)} 1..$n);
+                    $message =~ /^!(\d+)d(\d+|%)(?:([+-])(\d+))?/;
+                    my ($n,$s,$o,$ov)=($1,$2,$3,$4);
+                    my $repl;
+					$repl = "Roll: ".(join ', ',map {($s eq '%' ? int(rand() * 100) : int(1+rand() * $s)) + ($o ? ($o eq '+' ? $ov : -$ov) : 0)} 1..$n);
 					$serv->msg($chan,$repl);
                     return;
                 }
