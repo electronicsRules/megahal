@@ -10,7 +10,7 @@ use feature 'switch';
 
 sub new {
     my ($class, $serv) = @_;
-    my $self = { 'chans' => {}, 'chantimer' => {}, 'bl' => [], 'timers' => [], 'socket' => undef, 'socket_busy' => 0, 'debug' => 0, 'die' => 0, 'n_reconnect' => 0 };
+    my $self = { 'chans' => {}, 'chantimer' => {}, 'bl' => [], 'timers' => [], 'socket' => undef, 'socket_busy' => 0, 'debug' => 0, 'die' => 0, 'n_reconnect' => 0, 'split_length' => 400};
     $serv->reg_cb(
         'publicmsg' => sub {
             my ($this,  $nick, $ircmsg) = @_;
@@ -38,7 +38,7 @@ sub new {
                                 my @strs=();
                                 $str='';
                                 foreach (@games) {
-                                    if (length($str.' | '.$_) > 400) {
+                                    if (length($str.' | '.$_) > $self->{split_length}) {
                                         push @strs, $str;
                                         $str=$_;
                                     }else{
