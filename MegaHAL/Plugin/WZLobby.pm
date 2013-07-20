@@ -34,12 +34,23 @@ sub new {
                             if (scalar(@$dat) == 0) {
                                 $str.="${C}5none";
                             }else{
-                                $str.=join " | ", map {sprintf "${C}12${B}%s${O} by ${C}3${B}%s${O} on ${C}6${B}%s${O} [%u/%u] (${C}3wz ${B}%s${O}) at %s", $_->{name}, $_->{hostname}, $_->{mapname}, $_->{players}, $_->{maxPlayers}, $_->{'version'}, $_->{host}} @$dat;
+                                my @games=map {sprintf "${C}12${B}%s${O} by ${C}3${B}%s${O} on ${C}6${B}%s${O} [%u/%u] (${C}3wz ${B}%s${O}) at %s", $_->{name}, $_->{hostname}, $_->{mapname}, $_->{players}, $_->{maxPlayers}, $_->{'version'}, $_->{host}} @$dat;
+                                my @strs=();
+                                my $str='';
+                                foreach (@games) {
+                                    if (length($str.' | '.$_) > 400) {
+                                        push @strs, $str;
+                                        $str=$_;
+                                    }else{
+                                        $str.=($str ne '' ? ' | ' : '').$_;
+                                    }
+                                }
+                                $serv->msg($chan,$_) foreach @strs;
                             }
                         }else{
                             $str="${C}5Error: $dat";
                         }
-                        $serv->msg($chan,$str);
+                        $serv->msg($chan,$str) if $str;
                     });
                     return;
                 }
