@@ -36,7 +36,7 @@ sub new {
                             }else{
                                 my @games=map {sprintf "${C}12${B}%s${O} by ${C}3${B}%s${O} on ${C}6${B}%s${O} [%u/%u] (${C}3wz ${B}%s${O}) at %s", $_->{name}, $_->{hostname}, $_->{mapname}, $_->{players}, $_->{maxPlayers}, $_->{'version'}, $_->{host}} @$dat;
                                 my @strs=();
-                                my $str='';
+                                $str='';
                                 foreach (@games) {
                                     if (length($str.' | '.$_) > 400) {
                                         push @strs, $str;
