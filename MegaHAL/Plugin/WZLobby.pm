@@ -254,7 +254,7 @@ sub reconnect {
             $cv->send($msg);
         };
         my $sock;
-        $sock=new AnyEvent::handle(
+        $sock=new AnyEvent::Handle(
             on_prepare => sub {
                 return $self->{timeout};
             },
