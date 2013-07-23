@@ -10,7 +10,7 @@ use feature 'switch';
 
 sub new {
     my ($class, $serv) = @_;
-    my $self = { 'chans' => {}, 'chantimer' => {}, 'bl' => [], 'timers' => [], 'socket' => undef, 'socket_busy' => 0, 'debug' => 0, 'die' => 0, 'n_reconnect' => 0, 'split_length' => 400};
+    my $self = { 'chans' => {}, 'chantimer' => {}, 'bl' => [], 'timers' => [], 'socket' => undef, 'socket_busy' => 0, 'debug' => 0, 'die' => 0, 'n_reconnect' => 0, 'split_length' => 400, 'timeout' => 15};
     $serv->reg_cb(
         'publicmsg' => sub {
             my ($this,  $nick, $ircmsg) = @_;
@@ -238,27 +238,49 @@ sub reconnect {
         });
     }else{
         $self->{socket_busy}=1;
-        tcp_connect("lobby.wz2100.net",9990,sub {
-            return if $self->{die};
-            $self->debug("Socket connected");
-            $self->{_err}=sub {
-                my ($hdl,$ftl,$msg)=@_;
-                print "WZLobby: handle error $msg\n";
-                $hdl->destroy;
+        my $tmr_cancel=0;
+        my $tmr=AnyEvent->timer(after => $self->{'timeout'}, cb => sub {
+            unless ($tmr_cancel) {
                 $self->{socket}=undef;
-                $cv->send($msg);
-            };
-            my $sock=new AnyEvent::Handle(
-                fh => $_[0],
-                on_error => $self->{_err},
-                autocork => 1,
-                no_delay => 1,
-                keepalive => 1
-            );
-            $self->{socket}=$sock;
-            $self->{socket_busy}=0;
-            $cv->send();
+                $self->{socket_busy}=0;
+                $cv->send("ERROR: Timeout!");
+            }
         });
+        $self->{_err}=sub {
+            my ($hdl,$ftl,$msg)=@_;
+            print "WZLobby: handle error $msg\n";
+            $hdl->destroy;
+            $self->{socket}=undef;
+            $cv->send($msg);
+        };
+        my $sock;
+        $sock=new AnyEvent::handle(
+            on_prepare => sub {
+                return $self->{timeout};
+            },
+            connect => ["lobby.wz2100.net",9990],
+            on_error => $self->{_err},
+            autocork => 1,
+            no_delay => 1,
+            keepalive => 1,
+            on_connect => sub {
+                return if $self->{die} || $self->{socket};
+                $self->debug("Socket connected");
+                $tmr_cancel=1;
+                undef $tmr;
+                $self->{socket}=$sock;
+                $self->{socket_busy}=0;
+                $cv->send();
+            },
+            on_connect_error => sub {
+                return if $self->{die} || $self->{socket};
+                $self->debug("Socket connection error: $_[1]");
+                $tmr_cancel=1;
+                undef $tmr;
+                $self->{socket_busy}=0;
+                $cv->send("Socket connection error: $_[1]");
+            }
+        );
     }
     return $cv;
 }
