@@ -29,11 +29,12 @@ sub new {
                         my @repl;
                         alarm 1;
                         foreach (1..$n) {
-                            push @repl, ($s eq '%' ? Math::BigInt->new(int(rand() * 100)) : random_bigint(min => 1,max => $s) + ($o ? ($o eq '+' ? $ov : -$ov) : 0));
+                            push @repl, ($s eq '%' ? Math::BigInt->new(int(rand() * 100)) : ($s > 1 ? random_bigint(min => 1,max => $s) : $s) + ($o ? ($o eq '+' ? $ov : -$ov) : 0));
                         }
                         alarm 0;
                         $repl=join ", ", @repl;
                     };
+                    alarm 0;
                     if ($@) {
                         if ($@=~/Timeout/) {
                             $serv->msg($chan,"The calculation timed out, sorry!");
