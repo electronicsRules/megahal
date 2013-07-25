@@ -1,4 +1,6 @@
 package MegaHAL::Plugin::Dicebot;
+use Math::BigInt try => 'GMP';
+use Math::BigInt::Random qw(random_bigint);
 use Text::Glob qw(glob_to_regex);
 use utf8;
 use feature 'switch';
@@ -20,9 +22,32 @@ sub new {
                     my ($B, $C, $U, $O, $V) = ("\cB", "\cC", "\c_", "\cO", "\cV");
                     $message =~ /^!(\d+)d(\d+|%)(?:([+-])(\d+))?/;
                     my ($n,$s,$o,$ov)=($1,$2,$3,$4);
-                    my $repl;
-					$repl = "Roll: ".(join ', ',map {($s eq '%' ? int(rand() * 100) : int(1+rand() * $s)) + ($o ? ($o eq '+' ? $ov : -$ov) : 0)} 1..$n);
-					$serv->msg($chan,$repl);
+                    my $repl = "Roll:";
+					#$repl = "Roll: ".(join ', ',map {($s eq '%' ? int(rand() * 100) : int(1+rand() * $s)) + ($o ? ($o eq '+' ? $ov : -$ov) : 0)} 1..$n);
+                    eval {
+                        local $SIG{ALRM}=sub {die "Timeout!\n"};
+                        my @repl;
+                        alarm 1;
+                        foreach (1..$n) {
+                            push @repl, ($s eq '%' ? Math::BigInt->new(int(rand() * 100)) : random_bigint(min => 1,max => $s) + ($o ? ($o eq '+' ? $ov : -$ov) : 0));
+                        }
+                        alarm 0;
+                        $repl=join ", ", @repl;
+                    };
+                    if ($@) {
+                        if ($@=~/Timeout/) {
+                            $serv->msg($chan,"The calculation timed out, sorry!");
+                        }else{
+                            $serv->msg($chan,"ERROR: $@");
+                            print STDERR $@;
+                        }
+                    } else {
+                        if (length($repl) < 512) {
+                            $serv->msg($chan,$repl);
+                        }else{
+                            $serv->msg($chan,"Result too long, sorry!");
+                        }
+                    }
                     return;
                 }
             }
