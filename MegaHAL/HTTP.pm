@@ -12,6 +12,7 @@ sub new {
 	my $self={
 		loop => $loop,
 		http => $http,
+		timeout => 30,
 		watcher => EV::prepare(sub {$loop->loop_once(0)})
 	};
 	return bless $self, $class;
@@ -24,7 +25,7 @@ sub request {
 	$self->{http}->do_request(
 		request => ($uri->isa('HTTP::Request') ? $uri : undef),
 		uri => ($uri->isa('URI') ? $uri : undef),
-		timeout => 15,
+		timeout => $self->{timeout},
 		on_response => sub {
 			$cv->send($_[0]->decoded_content(),$_[0]);
 		},
