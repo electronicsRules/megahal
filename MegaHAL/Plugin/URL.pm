@@ -8,6 +8,7 @@ use Time::HiRes qw(time);
 use XML::Bare;
 use MegaHAL::Cache qw(cache_http);
 use HTML::Entities;
+use Encode;
 
 sub new {
     my ($class, $serv) = @_;
@@ -191,8 +192,8 @@ sub new {
                                     my $sdesc = shorten($desc);
                                     my $oa    = sprintf "%s${C}12${B}%s${O} by ${C}3${B}%s${O} [%s] [%s] [${C}3+%s${C}4-%s${O},%sc,%sv]%s ", $prefix, $title, $author, $duration, $cat, $upv, $downv, $ncomm, $views, ($cban ? " ${C}5$cban${O} " : '');
                                     my $mlen  = 841 - 15;
-                                    if (length($sdesc) >= ($mlen - 5) - length($oa)) {
-                                        $sdesc = substr($sdesc, 0, ($mlen - 5) - length($oa)) . '[...]';
+                                    if (length(encode('utf8',$sdesc)) >= ($mlen - 5) - length(encode('utf8',$oa))) {
+                                        $sdesc = substr($sdesc, 0, ($mlen - 5) - length(encode('utf8',$oa))) . '[...]';
                                     }
                                     $oa .= $sdesc unless $self->{'chans'}->{$chan}->{'youtube'} =~ /-desc/i;
                                     $serv->msg($chan, $oa);
