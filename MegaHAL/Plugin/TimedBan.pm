@@ -23,7 +23,7 @@ HELP
                 }
                 given ($args[0]) {
                     when ('add') {
-                        if (!$self->channel($args[1])) {
+                        if (!$self->channel_list($args[1])) {
                             $iface->write("\cC4I am not in channel $args[1], can't apply modes to it!");
                             return;
                         }
@@ -88,7 +88,7 @@ HELP
                     $mode=$obj->{'start'};
                 }
                 if ($mode && (time - $self->{'lastmsg'}) >= 1) {
-                    if (!$self->channel($args[1])) {
+                    if (!$self->channel_list($args[1])) {
                         warn "I am not in channel $args[1], can't apply modes to it!";
                         next;
                     }
