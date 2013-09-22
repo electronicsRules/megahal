@@ -31,7 +31,7 @@ HELP
                             $iface->write("\cC4I don't have OP (+o) in channel $args[1], I probably shouldn't apply modes to it!");
                             return;
                         }
-                        if (inPeriod(0,$args[2]) == -1) {
+                        if (inPeriod(0,$args[4]) == -1) {
                             $iface->write("\cC4Invalid range!");
                             return;
                         }
