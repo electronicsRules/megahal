@@ -90,12 +90,12 @@ HELP
                 }
                 if ($mode && (time - $serv->{'lastmsg'}) >= 1) {
                     unless ($c and $serv->channel_list($c)) {
-                        warn "I am not in channel $args[1], can't apply modes to it!";
+                        warn "I am not in channel $c, can't apply modes to it!";
                         next;
                     }
-                    my $modes=$serv->nick_modes($args[1],$serv->nick);
+                    my $modes=$serv->nick_modes($c,$serv->nick);
                     unless ($modes->{'o'} || $modes->{'h'}) {
-                        warn "I don't have OP (+o) in channel $args[1], I probably shouldn't apply modes to it!";
+                        warn "I don't have OP (+o) in channel $c, I probably shouldn't apply modes to it!";
                         next;
                     }
                     $serv->send_srv('MODE', $c, (split / /, $mode));
