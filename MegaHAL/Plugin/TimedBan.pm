@@ -23,7 +23,7 @@ HELP
                 }
                 given ($args[0]) {
                     when ('add') {
-                        if (!$serv->channel_list($args[1])) {
+                        unless ($args[1] and $serv->channel_list($args[1])) {
                             $iface->write("\cC4I am not in channel $args[1], can't apply modes to it!");
                             return;
                         }
@@ -88,11 +88,11 @@ HELP
                     $mode=$obj->{'start'};
                 }
                 if ($mode && (time - $serv->{'lastmsg'}) >= 1) {
-                    if (!$serv->channel_list($args[1])) {
+                    unless ($c and $serv->channel_list($c)) {
                         warn "I am not in channel $args[1], can't apply modes to it!";
                         next;
                     }
-                    if (not $serv->nick_modes($args[1],$serv->nick)->{'o'}) {
+                    if (not $serv->nick_modes($c,$serv->nick)->{'o'}) {
                         warn "I don't have OP (+o) in channel $args[1], I probably shouldn't apply modes to it!";
                         next;
                     }
