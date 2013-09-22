@@ -27,7 +27,8 @@ HELP
                             $iface->write("\cC4I am not in channel $args[1], can't apply modes to it!");
                             return;
                         }
-                        if (not $serv->nick_modes($args[1],$serv->nick)->{'o'}) {
+                        my $modes=$serv->nick_modes($args[1],$serv->nick);
+                        unless ($modes->{'o'} || $modes->{'h'}) {
                             $iface->write("\cC4I don't have OP (+o) in channel $args[1], I probably shouldn't apply modes to it!");
                             return;
                         }
@@ -59,7 +60,7 @@ HELP
                                 my $state='???';
                                 $state='on ' if $m->{'state'}==1;
                                 $state='off' if $m->{'state'}==0;
-                                $iface->write(sprintf("#%s %s %s {cur: %s} \cBstart:\cB [%s] \cBend:\cB [%s]", $n++, $c, $m->{'range'}, $state, $m->{'start'}, $m->{'end'}));
+                                $iface->write(sprintf("#%s %s %s {cur: %s} \cBstart:\cO [%s] \cBend:\cO [%s]", $n++, $c, $m->{'range'}, $state, $m->{'start'}, $m->{'end'}));
                             }
                         }
                     }
@@ -92,7 +93,8 @@ HELP
                         warn "I am not in channel $args[1], can't apply modes to it!";
                         next;
                     }
-                    if (not $serv->nick_modes($c,$serv->nick)->{'o'}) {
+                    my $modes=$serv->nick_modes($args[1],$serv->nick);
+                    unless ($modes->{'o'} || $modes->{'h'}) {
                         warn "I don't have OP (+o) in channel $args[1], I probably shouldn't apply modes to it!";
                         next;
                     }
