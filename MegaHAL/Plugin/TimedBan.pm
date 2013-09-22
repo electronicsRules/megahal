@@ -23,11 +23,11 @@ HELP
                 }
                 given ($args[0]) {
                     when ('add') {
-                        if (!$self->channel_list($args[1])) {
+                        if (!$serv->channel_list($args[1])) {
                             $iface->write("\cC4I am not in channel $args[1], can't apply modes to it!");
                             return;
                         }
-                        if (not $self->nick_modes($args[1],$self->nick)->{'o'}) {
+                        if (not $serv->nick_modes($args[1],$serv->nick)->{'o'}) {
                             $iface->write("\cC4I don't have OP (+o) in channel $args[1], I probably shouldn't apply modes to it!");
                             return;
                         }
@@ -87,12 +87,12 @@ HELP
                 if ($rst == 1 && $obj->{'state'} == 0) {
                     $mode=$obj->{'start'};
                 }
-                if ($mode && (time - $self->{'lastmsg'}) >= 1) {
-                    if (!$self->channel_list($args[1])) {
+                if ($mode && (time - $serv->{'lastmsg'}) >= 1) {
+                    if (!$serv->channel_list($args[1])) {
                         warn "I am not in channel $args[1], can't apply modes to it!";
                         next;
                     }
-                    if (not $self->nick_modes($args[1],$self->nick)->{'o'}) {
+                    if (not $serv->nick_modes($args[1],$serv->nick)->{'o'}) {
                         warn "I don't have OP (+o) in channel $args[1], I probably shouldn't apply modes to it!";
                         next;
                     }
