@@ -196,6 +196,7 @@ sub new {
                                         $sdesc = substr($sdesc, 0, ($mlen - 5) - length(encode('utf8',$oa))) . '[...]';
                                     }
                                     $oa .= $sdesc unless $self->{'chans'}->{$chan}->{'youtube'} =~ /-desc/i;
+                                    $oa=~s~https?://([^ ]+)~[link]~g; # prevent BotChaos
                                     $serv->msg($chan, $oa);
                                     return 1;
                                 }
@@ -242,7 +243,7 @@ sub load {
 
 sub save {
     my ($self) = @_;
-    return [ $self->{'chans'}, { 'bl' => [ map { ref $_ ? $_->str : $_ } @{ $self->{'bl'} } ] } ];
+    return [ $self->{'chans'}, { 'bl' => [ map { "$_" } @{ $self->{'bl'} } ] } ];
 }
 
 sub metric {
@@ -299,7 +300,7 @@ sub hmatch {
     my ($ref, $nick, $mask) = @_;
     my $mstr = $nick . '!' . $mask;
     foreach (@$ref) {
-        $_ = MegaHAL::Plugin::Regex::CGlobPat->new($_) if not ref $_;
+        $_ = MegaHAL::Plugin::URL::CGlobPat->new($_) if not ref $_;
         return 1 if $mstr =~ $_;
     }
     return 0;
@@ -307,7 +308,7 @@ sub hmatch {
 
 1;
 
-package MegaHAL::Plugin::Regex::CGlobPat;
+package MegaHAL::Plugin::URL::CGlobPat;
 use Text::Glob qw(glob_to_regex);
 
 use overload
