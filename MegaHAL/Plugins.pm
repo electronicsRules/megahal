@@ -240,7 +240,7 @@ sub load {
 }
 
 sub cleanup {
-    my ($self)=@_;
+    my ($self) = @_;
     $self->unload_plugin($_) foreach $self->list_plugins();
 }
 1;

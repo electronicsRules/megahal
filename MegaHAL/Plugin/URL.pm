@@ -143,7 +143,7 @@ sub new {
                                     my $srtregex = qr/(?:(?:foalcon)|(?:suggestive)|(?:grimdark)|(?:questionable)|(?:explicit)|(?:rape))/;
                                     my @tags     = sort { $b =~ /^artist:/ <=> $a =~ /^artist:/ } sort { $b =~ $srtregex <=> $a =~ $srtregex } sort { $b =~ /^spoiler:/ <=> $a =~ /^spoiler:/ } split /,/, $o->{'tags'};
                                     my $max      = 30;
-                                    $o->{'tags'} = join ',', grep { $_ } @tags[ 0 .. $max - 1 ];
+                                    $o->{'tags'} = join ',', grep {$_} @tags[ 0 .. $max - 1 ];
                                     if (scalar(@tags) > $max) {
                                         $o->{'tags'} .= '<...>';
                                     }
@@ -192,11 +192,11 @@ sub new {
                                     my $sdesc = shorten($desc);
                                     my $oa    = sprintf "%s${C}12${B}%s${O} by ${C}3${B}%s${O} [%s] [%s] [${C}3+%s${C}4-%s${O},%sc,%sv]%s ", $prefix, $title, $author, $duration, $cat, $upv, $downv, $ncomm, $views, ($cban ? " ${C}5$cban${O} " : '');
                                     my $mlen  = 841 - 15;
-                                    if (length(encode('utf8',$sdesc)) >= ($mlen - 5) - length(encode('utf8',$oa))) {
-                                        $sdesc = substr($sdesc, 0, ($mlen - 5) - length(encode('utf8',$oa))) . '[...]';
+                                    if (length(encode('utf8', $sdesc)) >= ($mlen - 5) - length(encode('utf8', $oa))) {
+                                        $sdesc = substr($sdesc, 0, ($mlen - 5) - length(encode('utf8', $oa))) . '[...]';
                                     }
                                     $oa .= $sdesc unless $self->{'chans'}->{$chan}->{'youtube'} =~ /-desc/i;
-                                    $oa=~s~https?://([^ ]+)~[link]~g; # prevent BotChaos
+                                    $oa =~ s~https?://([^ ]+)~[link]~g;    # prevent BotChaos
                                     $serv->msg($chan, $oa);
                                     return 1;
                                 }
@@ -243,7 +243,7 @@ sub load {
 
 sub save {
     my ($self) = @_;
-    return [ $self->{'chans'}, { 'bl' => [ map { "$_" } @{ $self->{'bl'} } ] } ];
+    return [ $self->{'chans'}, { 'bl' => [ map {"$_"} @{ $self->{'bl'} } ] } ];
 }
 
 sub metric {

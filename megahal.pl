@@ -19,10 +19,8 @@ use MegaHAL::Telnet;
 our $VERSION = '1.5';
 our @cmdt;
 our %opts;
-$opts{telnet}=1;
-GetOptions(\%opts,
-    'telnet!'
-);
+$opts{telnet} = 1;
+GetOptions(\%opts, 'telnet!');
 my $old_stdout;
 open($old_stdout, '>&STDOUT') or die "Can't dup STDOUT!\n";
 my $c = AnyEvent->condvar;

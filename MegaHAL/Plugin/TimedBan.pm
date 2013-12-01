@@ -11,7 +11,7 @@ sub new {
     $serv->reg_cb(
         'iConsoleCommand' => sub {
             my ($this, $iface, $cmd, @args) = @_;
-            if ($cmd=~/^t(?:imed)?b(?:an)?$/) {
+            if ($cmd =~ /^t(?:imed)?b(?:an)?$/) {
                 if ($args[0] eq 'help' or not defined $args[0]) {
                     $iface->write(<<'HELP');
 add [chan] [startmode] [endmode] [range]
@@ -19,7 +19,7 @@ del [chan] [n]
 del [chan]
 list
 HELP
-;return
+                    return;
                 }
                 given ($args[0]) {
                     when ('add') {
@@ -27,39 +27,39 @@ HELP
                             $iface->write("\cC4I am not in channel $args[1], can't apply modes to it!");
                             return;
                         }
-                        my $modes=$serv->nick_modes($args[1],$serv->nick);
+                        my $modes = $serv->nick_modes($args[1], $serv->nick);
                         unless ($modes->{'o'} || $modes->{'h'}) {
                             $iface->write("\cC4I don't have OP (+o) in channel $args[1], I probably shouldn't apply modes to it!");
                             return;
                         }
-                        if (inPeriod(0,$args[4]) == -1) {
+                        if (inPeriod(0, $args[4]) == -1) {
                             $iface->write("\cC4Invalid range!");
                             return;
                         }
-                        push @{$self->{'chans'}->{$args[1]}}, {
-                            range => $args[4],
+                        push @{ $self->{'chans'}->{ $args[1] } },
+                          { range => $args[4],
                             start => $args[2],
-                            end => $args[3],
+                            end   => $args[3],
                             state => -1
-                        };
+                          };
                     }
                     when ('del') {
                         if ($args[2]) {
-                            my $obj=splice @{$self->{'chans'}->{$args[1]}}, $args[2]-1, 1;
-                            $iface->write(sprintf('Removed timed mode %s %s start: [%s] end: [%s]',$args[1],$obj->{'range'},$obj->{'start'},$obj->{'end'}));
-                        }else{
-                            delete $self->{'chans'}->{$args[1]};
+                            my $obj = splice @{ $self->{'chans'}->{ $args[1] } }, $args[2] - 1, 1;
+                            $iface->write(sprintf('Removed timed mode %s %s start: [%s] end: [%s]', $args[1], $obj->{'range'}, $obj->{'start'}, $obj->{'end'}));
+                        } else {
+                            delete $self->{'chans'}->{ $args[1] };
                             $iface->write("Removed all timed modes from channel $args[1]");
                         }
                     }
                     when ('list') {
                         $iface->write('Timed modes:');
-                        foreach my $c (keys %{$self->{'chans'}}) {
-                            my $n=1;
-                            foreach my $m (@{$self->{'chans'}->{$c}}) {
-                                my $state='???';
-                                $state='on ' if $m->{'state'}==1;
-                                $state='off' if $m->{'state'}==0;
+                        foreach my $c (keys %{ $self->{'chans'} }) {
+                            my $n = 1;
+                            foreach my $m (@{ $self->{'chans'}->{$c} }) {
+                                my $state = '???';
+                                $state = 'on ' if $m->{'state'} == 1;
+                                $state = 'off' if $m->{'state'} == 0;
                                 $iface->write(sprintf("#%s %s %s {cur: %s} \cBstart:\cO [%s] \cBend:\cO [%s]", $n++, $c, $m->{'range'}, $state, $m->{'start'}, $m->{'end'}));
                             }
                         }
@@ -68,45 +68,47 @@ HELP
             }
         }
     );
-    $serv->reg_cb('tick' => sub {
-        foreach my $c (keys %{$self->{'chans'}}) {
-            my $n=0;
-            foreach my $obj (@{$self->{'chans'}->{$c}}) {
-                my $rst=inPeriod(time(),$obj->{'range'});
-                if ($rst == -1) {
-                    warn "TimedBan: Invalid range!\n";
-                    splice @{$self->{'chans'}->{$c}}, $n, 1;
-                    return;
-                }
-                if ($obj->{'state'} == -1) {
-                    $obj->{'state'}=!$rst;
-                }
-                my $mode;
-                if ($rst == 0 && $obj->{'state'} == 1) {
-                    $mode=$obj->{'end'};
-                }
-                if ($rst == 1 && $obj->{'state'} == 0) {
-                    $mode=$obj->{'start'};
-                }
-                if ($mode && (time - $serv->{'lastmsg'}) >= 1) {
-                    unless ($c and $serv->channel_list($c)) {
-                        warn "I am not in channel $c, can't apply modes to it!";
-                        next;
+    $serv->reg_cb(
+        'tick' => sub {
+            foreach my $c (keys %{ $self->{'chans'} }) {
+                my $n = 0;
+                foreach my $obj (@{ $self->{'chans'}->{$c} }) {
+                    my $rst = inPeriod(time(), $obj->{'range'});
+                    if ($rst == -1) {
+                        warn "TimedBan: Invalid range!\n";
+                        splice @{ $self->{'chans'}->{$c} }, $n, 1;
+                        return;
                     }
-                    my $modes=$serv->nick_modes($c,$serv->nick);
-                    unless ($modes->{'o'} || $modes->{'h'}) {
-                        warn "I don't have OP (+o) in channel $c, I probably shouldn't apply modes to it!";
-                        next;
+                    if ($obj->{'state'} == -1) {
+                        $obj->{'state'} = !$rst;
                     }
-                    $serv->send_srv('MODE', $c, (split / /, $mode));
-                    $self->{'lastmsg'}=time;
-                    $obj->{'state'}=$rst;
-                    return;
+                    my $mode;
+                    if ($rst == 0 && $obj->{'state'} == 1) {
+                        $mode = $obj->{'end'};
+                    }
+                    if ($rst == 1 && $obj->{'state'} == 0) {
+                        $mode = $obj->{'start'};
+                    }
+                    if ($mode && (time - $serv->{'lastmsg'}) >= 1) {
+                        unless ($c and $serv->channel_list($c)) {
+                            warn "I am not in channel $c, can't apply modes to it!";
+                            next;
+                        }
+                        my $modes = $serv->nick_modes($c, $serv->nick);
+                        unless ($modes->{'o'} || $modes->{'h'}) {
+                            warn "I don't have OP (+o) in channel $c, I probably shouldn't apply modes to it!";
+                            next;
+                        }
+                        $serv->send_srv('MODE', $c, (split / /, $mode));
+                        $self->{'lastmsg'} = time;
+                        $obj->{'state'}    = $rst;
+                        return;
+                    }
+                    $n++;
                 }
-                $n++;
             }
         }
-    });
+    );
     return bless $self, $class;
 }
 

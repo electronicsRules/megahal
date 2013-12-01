@@ -21,32 +21,32 @@ sub new {
                 if (!(hmatch($self->{'bl'}, $nick, $ident)) && $message =~ /^!\d+d(?:\d+|%)(?:[+-]\d+)?$/) {
                     my ($B, $C, $U, $O, $V) = ("\cB", "\cC", "\c_", "\cO", "\cV");
                     $message =~ /^!(\d+)d(\d+|%)(?:([+-])(\d+))?/;
-                    my ($n,$s,$o,$ov)=($1,$2,$3,$4);
+                    my ($n, $s, $o, $ov) = ($1, $2, $3, $4);
                     my $repl = "Roll:";
-					#$repl = "Roll: ".(join ', ',map {($s eq '%' ? int(rand() * 100) : int(1+rand() * $s)) + ($o ? ($o eq '+' ? $ov : -$ov) : 0)} 1..$n);
+                    #$repl = "Roll: ".(join ', ',map {($s eq '%' ? int(rand() * 100) : int(1+rand() * $s)) + ($o ? ($o eq '+' ? $ov : -$ov) : 0)} 1..$n);
                     eval {
-                        local $SIG{ALRM}=sub {die "Timeout!\n"};
+                        local $SIG{ALRM} = sub { die "Timeout!\n" };
                         my @repl;
                         alarm 1;
-                        foreach (1..$n) {
-                            push @repl, ($s eq '%' ? Math::BigInt->new(int(rand() * 100)) : ($s > 1 ? random_bigint(min => 1,max => $s) : $s) + ($o ? ($o eq '+' ? $ov : -$ov) : 0));
+                        foreach (1 .. $n) {
+                            push @repl, ($s eq '%' ? Math::BigInt->new(int(rand() * 100)) : ($s > 1 ? random_bigint(min => 1, max => $s) : $s) + ($o ? ($o eq '+' ? $ov : -$ov) : 0));
                         }
                         alarm 0;
-                        $repl=join ", ", @repl;
+                        $repl = join ", ", @repl;
                     };
                     alarm 0;
                     if ($@) {
-                        if ($@=~/Timeout/) {
-                            $serv->msg($chan,"The calculation timed out, sorry!");
-                        }else{
-                            $serv->msg($chan,"ERROR: $@");
+                        if ($@ =~ /Timeout/) {
+                            $serv->msg($chan, "The calculation timed out, sorry!");
+                        } else {
+                            $serv->msg($chan, "ERROR: $@");
                             print STDERR $@;
                         }
                     } else {
                         if (length($repl) < 512) {
-                            $serv->msg($chan,$repl);
-                        }else{
-                            $serv->msg($chan,"Result too long, sorry!");
+                            $serv->msg($chan, $repl);
+                        } else {
+                            $serv->msg($chan, "Result too long, sorry!");
                         }
                     }
                     return;

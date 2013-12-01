@@ -29,7 +29,7 @@ sub new {
         'iConsoleCommand' => sub {
             my ($this, $i, $cmd, @args) = @_;
             if ($cmd eq 'aj') {
-                if ($args[0] eq 'add' && scalar(grep { lc $_ eq lc $args[1] } @{ $self->{'chans'} })==0) {
+                if ($args[0] eq 'add' && scalar(grep { lc $_ eq lc $args[1] } @{ $self->{'chans'} }) == 0) {
                     push @{ $self->{'chans'} }, $args[1];
                     $i->write("Added channel $args[1] to autojoin");
                 }
@@ -44,7 +44,7 @@ sub new {
                     $i->write("Channel $args[1] was probably not in autojoin after all.");
                 }
                 if ($args[0] eq 'list') {
-                    $i->write(join ",", @{$self->{'chans'}});
+                    $i->write(join ",", @{ $self->{'chans'} });
                 }
             }
         }

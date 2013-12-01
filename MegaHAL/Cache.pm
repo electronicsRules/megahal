@@ -13,8 +13,8 @@ our @EXPORT_OK = qw(cache_http);
 #    'namespace' => 'megahal:'
 #);
 our %ds;
-our $DEBUG=0;
-our $http=MegaHAL::HTTP->new();
+our $DEBUG = 0;
+our $http  = MegaHAL::HTTP->new();
 our $cache = CHI->new(
     driver   => 'Memcached',
     servers  => ['/tmp/memcached.sock'],
@@ -83,22 +83,24 @@ sub cache_http {
         print "Cache miss [$key]: $url\n" if $DEBUG;
         if ((AnyEvent->now() - $lreq) >= $dreqi) {
             my $cv = $http->request($url);
-            $cv->cb(sub {
-                my $r;
-                eval { $r = $sub->($_[0]->recv) };
-                if ($@) {
-                    warn "Error in cache callback: $@\n";
-                }
-                if ($!) {
-                    warn "Error in cache callback: $!\n";
-                }
-                if ($r) {
-                    EV::run EV::RUN_NOWAIT;
-                    if (!ref (($_[0]->recv())[0])) {
-                        $cache->set('http:' . $key, ($_[0]->recv())[0], $expire || 60 * 60 * 15);
+            $cv->cb(
+                sub {
+                    my $r;
+                    eval { $r = $sub->($_[0]->recv) };
+                    if ($@) {
+                        warn "Error in cache callback: $@\n";
+                    }
+                    if ($!) {
+                        warn "Error in cache callback: $!\n";
+                    }
+                    if ($r) {
+                        EV::run EV::RUN_NOWAIT;
+                        if (!ref(($_[0]->recv())[0])) {
+                            $cache->set('http:' . $key, ($_[0]->recv())[0], $expire || 60 * 60 * 15);
+                        }
                     }
                 }
-            });
+            );
             $lreq = time;
         } else {
             push @delayedreq, [ $url, $key, $expire, $sub ];
