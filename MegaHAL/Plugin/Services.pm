@@ -89,6 +89,7 @@ sub new {
                         sub {
                             return unless $_[0] or $self->{'chans'}->{ $args[0] }->{$nick}->{'founder'};
                             my $str = join ", ", map { $_ . ' ' . $self->{'chans'}->{ $args[0] }->{$_}->{'modes'} } keys %{ $self->{'chans'}->{ $args[0] } };
+                            $self->{'users'}->{$nick}->write("Modes: ".$str);
                         }
                     );
                 }
